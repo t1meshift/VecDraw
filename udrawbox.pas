@@ -91,7 +91,16 @@ begin
   begin
     IsDrawing := true;
     SetLength(CanvasItems, Length(CanvasItems) + 1);
+    //add the start point
+    with CanvasItems[High(CanvasItems)] do
+    begin
+      SetLength(Vertexes, Length(Vertexes) + 1);
+      Vertexes[High(Vertexes)] := Point(X, Y);
+      Color := CurrentColor;
+      Width := CurrentWidth;
+    end;
   end;
+  PaintBox.Invalidate;
 end;
 
 procedure TDrawForm.PaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -116,9 +125,8 @@ begin
   if Button = mbLeft then
   begin
     IsDrawing := false;
-    if Length(CanvasItems[High(CanvasItems)].Vertexes) = 0 then
-      SetLength(CanvasItems, Length(CanvasItems) - 1);
     PaintBox.Invalidate;
+    SetLength(UndoHistory, 0); //clear undo history stack
   end;
 end;
 
@@ -135,6 +143,8 @@ begin
     begin
       Pen.Color := i.Color;
       Pen.Width := i.Width;
+      if Length(i.Vertexes) = 1 then
+        Line(i.Vertexes[0],i.Vertexes[0]);
       Polyline(i.Vertexes);
     end;
   end;
