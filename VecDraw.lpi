@@ -18,7 +18,7 @@
       <StringTable ProductVersion=""/>
     </VersionInfo>
     <BuildModes Count="1">
-      <Item1 Name="Default" Default="True"/>
+      <Item1 Name="Debug" Default="True"/>
     </BuildModes>
     <PublishOptions>
       <Version Value="2"/>
@@ -33,7 +33,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="3">
+    <Units Count="5">
       <Unit0>
         <Filename Value="VecDraw.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -54,6 +54,16 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UAbout"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="ufigures.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UFigures"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="ufiguresbase.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UFiguresBase"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -66,7 +76,27 @@
       <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <IncludeAssertionCode Value="True"/>
+      </SyntaxOptions>
+    </Parsing>
+    <CodeGeneration>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
+      <VerifyObjMethodCallValidity Value="True"/>
+    </CodeGeneration>
     <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf2Set"/>
+        <UseHeaptrc Value="True"/>
+        <TrashVariables Value="True"/>
+        <UseExternalDbgSyms Value="True"/>
+      </Debugging>
       <Options>
         <Win32>
           <GraphicApplication Value="True"/>

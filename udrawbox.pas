@@ -6,19 +6,23 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
-  ExtCtrls, Spin, ActnList, Buttons, UAbout;
+  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UFiguresBase,
+  strutils;
 
 type
 
   { TDrawForm }
 
   TDrawForm = class(TForm)
+    ChangeFillColorButton: TColorButton;
+    FillColorLabel: TLabel;
+    LineWidthLabel: TLabel;
+    ToolsPanel: TPanel;
+    LineColorLabel: TLabel;
     RedoAction: TAction;
-    RedoButton: TSpeedButton;
-    UndoButton: TSpeedButton;
     UndoAction: TAction;
     EditorActionList: TActionList;
-    ChangeColorButton: TColorButton;
+    ChangeLineColorButton: TColorButton;
     DrawColorDialog: TColorDialog;
     MainMenu: TMainMenu;
     FileMenuItem: TMenuItem;
@@ -28,17 +32,19 @@ type
     EditMenuItem: TMenuItem;
     RedoMenuItem: TMenuItem;
     UndoMenuItem: TMenuItem;
-    PaintBox: TPaintBox;
+    MainPaintBox: TPaintBox;
     PenWidthSpinEdit: TSpinEdit;
     procedure FormCreate(Sender: TObject);
-    procedure PaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
+    procedure ToolButtonClick(Sender: TObject);
+    procedure MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure PaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
+    procedure MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
-    procedure PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
+    procedure MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure PaintBoxPaint(Sender: TObject);
-    procedure DrawColorDialogClose(Sender: TObject);
+    procedure MainPaintBoxPaint(Sender: TObject);
+    procedure ChangeLineColorButtonColorChanged(Sender: TObject);
+    procedure ChangeFillColorButtonColorChanged(Sender: TObject);
     procedure PenWidthSpinEditChange(Sender: TObject);
     procedure UndoActionExecute(Sender: TObject);
     procedure RedoActionExecute(Sender: TObject);
@@ -51,22 +57,18 @@ type
     { public declarations }
   end;
 
-  TPolyLine = record
-    Vertexes: array of TPoint;
-    Color: TColor;
-    Width: integer;
-  end;
-
 const
-  START_COLOR = clBlack;
+  START_LINE_COLOR = clBlack;
+  START_FILL_COLOR = clWhite;
   START_WIDTH = 1;
 
 var
   DrawForm: TDrawForm;
   IsDrawing: boolean;
-  CanvasItems, UndoHistory: array of TPolyLine;
-  CurrentColor: TColor;
-  CurrentWidth: integer;
+  CurrentFigure: TFigureClass;
+  CanvasItems, UndoHistory: array of TFigure;
+  CurrentLineColor, CurrentFillColor: TColor;
+  CurrentLineWidth: integer;
 
 implementation
 
@@ -75,89 +77,118 @@ implementation
 { TDrawForm }
 
 procedure TDrawForm.FormCreate(Sender: TObject);
+var
+  b: TSpeedButton;
+  i: integer;
+  icn: TPicture;
+  ipr: integer; //icons per row
 begin
   DrawForm.Caption := ApplicationName;
   isDrawing := false;
-  CurrentColor := START_COLOR;
-  ChangeColorButton.Color := CurrentColor;
-  CurrentWidth := START_WIDTH;
-  PenWidthSpinEdit.Value := CurrentWidth;
+
+  CurrentLineColor := START_LINE_COLOR;
+  ChangeLineColorButton.ButtonColor := CurrentLineColor;
+
+  CurrentFillColor := START_FILL_COLOR;
+  ChangeFillColorButton.ButtonColor := CurrentFillColor;
+
+  CurrentLineWidth := START_WIDTH;
+  PenWidthSpinEdit.Value := CurrentLineWidth;
+
+  ipr := ToolsPanel.Width div (32+2+1);
+
+  for i:=Low(FiguresBase) to High(FiguresBase) do
+  begin
+    b := TSpeedButton.Create(ToolsPanel);
+    b.Parent := ToolsPanel;
+    b.Name := 'ToolButton' + FiguresBase[i].ClassName;
+    b.Tag := i;
+    b.OnClick := @ToolButtonClick;
+
+    icn := TPicture.Create;
+    icn.LoadFromFile(FiguresBase[i].ClassName + '.png');
+    b.Glyph := icn.Bitmap;
+    icn.Free;
+
+    b.Left := 1 + (i mod ipr)*(32+2); //buttons are always 32x32(+2px margin and 1px padding)
+    b.Top := 1 + (i div ipr)*(32+2);
+    b.Width := (32+2);
+    b.Height := (32+2);
+  end;
+
+  CurrentFigure := FiguresBase[0];
 end;
 
-procedure TDrawForm.PaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
+procedure TDrawForm.ToolButtonClick(Sender: TObject);
+begin
+  CurrentFigure := FiguresBase[(Sender as TSpeedButton).Tag];
+end;
+
+procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
   if Button = mbLeft then
   begin
     IsDrawing := true;
     SetLength(CanvasItems, Length(CanvasItems) + 1);
-    //add the start point
-    with CanvasItems[High(CanvasItems)] do
-    begin
-      SetLength(Vertexes, Length(Vertexes) + 1);
-      Vertexes[High(Vertexes)] := Point(X, Y);
-      Color := CurrentColor;
-      Width := CurrentWidth;
-    end;
+    CanvasItems[High(CanvasItems)] := CurrentFigure.Create(X, Y, CurrentLineColor,
+      CurrentLineWidth, CurrentFillColor);
   end;
-  PaintBox.Invalidate;
+  MainPaintBox.Invalidate;
 end;
 
-procedure TDrawForm.PaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
+procedure TDrawForm.MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
   if IsDrawing then
   begin
-    with CanvasItems[High(CanvasItems)] do
-    begin
-      SetLength(Vertexes, Length(Vertexes) + 1);
-      Vertexes[High(Vertexes)] := Point(X, Y);
-      Color := CurrentColor;
-      Width := CurrentWidth;
-    end;
-    PaintBox.Invalidate;
+    CanvasItems[High(CanvasItems)].MouseMove(X, Y);
+    MainPaintBox.Invalidate;
   end;
 end;
 
-procedure TDrawForm.PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
+procedure TDrawForm.MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+var
+  i: integer;
 begin
   if Button = mbLeft then
   begin
     IsDrawing := false;
-    PaintBox.Invalidate;
-    SetLength(UndoHistory, 0); //clear undo history stack
+    MainPaintBox.Invalidate;
+    for i := Low(UndoHistory) to High(UndoHistory) do
+      FreeAndNil(UndoHistory[i]);
+    SetLength(UndoHistory, 0);
   end;
 end;
 
-procedure TDrawForm.PaintBoxPaint(Sender: TObject);
+procedure TDrawForm.MainPaintBoxPaint(Sender: TObject);
 var
-  i: TPolyLine;
+  i: TFigure;
 begin
-  with PaintBox.Canvas do
+  with MainPaintBox.Canvas do
   begin
     Pen.Color := clWhite;
     Brush.Color := clWhite;
-    Rectangle(0, 0, PaintBox.Width, PaintBox.Height);
-    for i in CanvasItems do
-    begin
-      Pen.Color := i.Color;
-      Pen.Width := i.Width;
-      if Length(i.Vertexes) = 1 then
-        Line(i.Vertexes[0],i.Vertexes[0]);
-      Polyline(i.Vertexes);
-    end;
+    Rectangle(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
+    for i in CanvasItems do
+      i.Draw(MainPaintBox.Canvas);
 end;
 
-procedure TDrawForm.DrawColorDialogClose(Sender: TObject);
+procedure TDrawForm.ChangeLineColorButtonColorChanged(Sender: TObject);
 begin
-  CurrentColor := DrawColorDialog.Color;
+  CurrentLineColor := ChangeLineColorButton.ButtonColor;
+end;
+
+procedure TDrawForm.ChangeFillColorButtonColorChanged(Sender: TObject);
+begin
+  CurrentFillColor := ChangeFillColorButton.ButtonColor;
 end;
 
 procedure TDrawForm.PenWidthSpinEditChange(Sender: TObject);
 begin
-  CurrentWidth := PenWidthSpinEdit.Value;
+  CurrentLineWidth := PenWidthSpinEdit.Value;
 end;
 
 procedure TDrawForm.UndoActionExecute(Sender: TObject);
@@ -167,7 +198,7 @@ begin
     SetLength(UndoHistory, Length(UndoHistory) + 1);
     UndoHistory[High(UndoHistory)] := CanvasItems[High(CanvasItems)];
     SetLength(CanvasItems, Length(CanvasItems) - 1);
-    PaintBox.Invalidate;
+    MainPaintBox.Invalidate;
   end;
 end;
 
@@ -178,7 +209,7 @@ begin
     SetLength(CanvasItems, Length(CanvasItems) + 1);
     CanvasItems[High(CanvasItems)] := UndoHistory[High(UndoHistory)];
     SetLength(UndoHistory, Length(UndoHistory) - 1);
-    PaintBox.Invalidate;
+    MainPaintBox.Invalidate;
   end;
 end;
 
