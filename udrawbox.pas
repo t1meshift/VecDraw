@@ -34,6 +34,7 @@ type
     UndoMenuItem: TMenuItem;
     MainPaintBox: TPaintBox;
     PenWidthSpinEdit: TSpinEdit;
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
     procedure MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
@@ -58,6 +59,9 @@ type
   end;
 
 const
+  TOOL_BUTTON_SIZE = 32;
+  TOOL_BUTTON_MARGIN = 2;
+  TOOL_BUTTON_PADDING = 1;
   START_LINE_COLOR = clBlack;
   START_FILL_COLOR = clWhite;
   START_WIDTH = 1;
@@ -80,8 +84,8 @@ procedure TDrawForm.FormCreate(Sender: TObject);
 var
   b: TSpeedButton;
   i: integer;
-  icn: TPicture;
-  ipr: integer; //icons per row
+  CurrentIcon: TPicture;
+  IconsPerRow: integer;
 begin
   DrawForm.Caption := ApplicationName;
   isDrawing := false;
@@ -95,7 +99,8 @@ begin
   CurrentLineWidth := START_WIDTH;
   PenWidthSpinEdit.Value := CurrentLineWidth;
 
-  ipr := ToolsPanel.Width div (32+2+1);
+  IconsPerRow := ToolsPanel.Width div
+    (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
 
   for i:=Low(FiguresBase) to High(FiguresBase) do
   begin
@@ -105,18 +110,33 @@ begin
     b.Tag := i;
     b.OnClick := @ToolButtonClick;
 
-    icn := TPicture.Create;
-    icn.LoadFromFile(FiguresBase[i].ClassName + '.png');
-    b.Glyph := icn.Bitmap;
-    icn.Free;
+    CurrentIcon := TPicture.Create;
+    CurrentIcon.LoadFromFile(FiguresBase[i].ClassName + '.png');
+    b.Glyph := CurrentIcon.Bitmap;
+    CurrentIcon.Free;
 
-    b.Left := 1 + (i mod ipr)*(32+2); //buttons are always 32x32(+2px margin and 1px padding)
-    b.Top := 1 + (i div ipr)*(32+2);
-    b.Width := (32+2);
-    b.Height := (32+2);
+    b.Left := (i mod IconsPerRow)*(TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
+              TOOL_BUTTON_PADDING;
+    b.Top  := (i div IconsPerRow)*(TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
+              TOOL_BUTTON_PADDING;
+    b.Width := TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN;
+    b.Height := b.Width;
   end;
 
   CurrentFigure := FiguresBase[0];
+end;
+
+procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+var
+  i: integer;
+begin
+  for i := Low(UndoHistory) to High(UndoHistory) do
+    FreeAndNil(UndoHistory[i]);
+  SetLength(UndoHistory, 0);
+  for i := Low(CanvasItems) to High(CanvasItems) do
+    FreeAndNil(CanvasItems[i]);
+  SetLength(CanvasItems, 0);
+  CurrentFigure := nil;
 end;
 
 procedure TDrawForm.ToolButtonClick(Sender: TObject);

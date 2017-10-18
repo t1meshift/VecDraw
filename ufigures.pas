@@ -80,8 +80,6 @@ begin
   begin
     Pen.Color := LineColor;
     Pen.Width := LineWidth;
-    if Length(Vertexes) < 3 then
-      Line(Vertexes[0], Vertexes[0]);
     Polyline(Vertexes);
   end;
 end;

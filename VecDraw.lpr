@@ -18,5 +18,6 @@ begin
   Application.CreateForm(TDrawForm, DrawForm);
   Application.CreateForm(TAboutForm, AboutForm);
   Application.Run;
+
 end.
 
