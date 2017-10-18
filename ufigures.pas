@@ -127,6 +127,7 @@ begin
     Pen.Color := LineColor;
     Pen.Width := LineWidth;
     Brush.Color := FillColor;
+    Brush.Style := FillStyle;
     Ellipse(Vertexes[0].x, Vertexes[0].y, Vertexes[1].x, Vertexes[1].y);
   end;
 end;
