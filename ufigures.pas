@@ -17,9 +17,10 @@ type
     Vertexes: TPointList;
     LineColor, FillColor: TColor;
     LineWidth: integer;
+    FillStyle: TBrushStyle;
   public
     constructor Create(X, Y: integer; ALineColor: TColor;
-      ALineWidth: integer; AFillColor: TColor);
+      ALineWidth: integer; AFillColor: TColor; AFillStyle: TBrushStyle);
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
     procedure MouseMove(X, Y: integer); virtual; abstract;
   end;
@@ -62,7 +63,7 @@ implementation
 { TFigure }
 
 constructor TFigure.Create(X, Y: integer; ALineColor: TColor;
-  ALineWidth: integer; AFillColor: TColor);
+  ALineWidth: integer; AFillColor: TColor; AFillStyle: TBrushStyle);
 begin
   SetLength(Vertexes, 2);
   Vertexes[0] := Point(X, Y);
@@ -70,6 +71,7 @@ begin
   LineColor := ALineColor;
   LineWidth := ALineWidth;
   FillColor := AFillColor;
+  FillStyle := AFillStyle;
 end;
 
 { TPolyLine }
@@ -106,6 +108,7 @@ begin
     Pen.Color := LineColor;
     Pen.Width := LineWidth;
     Brush.Color := FillColor;
+    Brush.Style := FillStyle;
     Rectangle(Vertexes[0].x, Vertexes[0].y, Vertexes[1].x, Vertexes[1].y);
   end;
 end;

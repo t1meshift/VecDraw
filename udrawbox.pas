@@ -6,8 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
-  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UFiguresBase,
-  strutils;
+  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UFiguresBase;
 
 type
 
@@ -15,7 +14,9 @@ type
 
   TDrawForm = class(TForm)
     ChangeFillColorButton: TColorButton;
+    ChangeFillStyleComboBox: TComboBox;
     FillColorLabel: TLabel;
+    FillStyleLabel: TLabel;
     LineWidthLabel: TLabel;
     ToolsPanel: TPanel;
     LineColorLabel: TLabel;
@@ -34,6 +35,7 @@ type
     UndoMenuItem: TMenuItem;
     MainPaintBox: TPaintBox;
     PenWidthSpinEdit: TSpinEdit;
+    procedure ChangeFillStyleComboBoxChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
@@ -58,13 +60,54 @@ type
     { public declarations }
   end;
 
+  TFillStyleItem = record
+    Name: string;
+    BrushStyle: TBrushStyle;
+  end;
+
 const
   TOOL_BUTTON_SIZE = 32;
   TOOL_BUTTON_MARGIN = 2;
   TOOL_BUTTON_PADDING = 1;
   START_LINE_COLOR = clBlack;
   START_FILL_COLOR = clWhite;
+  START_FILL_STYLE = 0; //index of FILL_STYLES
   START_WIDTH = 1;
+  FILL_STYLES: array[0..7] of TFillStyleItem =
+    (
+      (
+        Name: 'Solid';
+        BrushStyle: bsSolid
+      ),
+      (
+        Name: 'Hollow';
+        BrushStyle: bsClear
+      ),
+      (
+        Name: 'Horizontal stripes';
+        BrushStyle: bsHorizontal
+      ),
+      (
+        Name: 'Vertical stripes' ;
+        BrushStyle: bsVertical
+      ),
+      (
+        Name: 'Left diagonal';
+        BrushStyle: bsFDiagonal
+      ),
+      (
+        Name: 'Right diagonal';
+        BrushStyle: bsBDiagonal
+      ),
+      (
+        Name: 'Cross';
+        BrushStyle: bsCross
+      ),
+      (
+        Name: 'Diagonal cross';
+        BrushStyle: bsDiagCross
+      )
+    );
 
 var
   DrawForm: TDrawForm;
@@ -72,7 +115,7 @@ var
   CurrentFigure: TFigureClass;
   CanvasItems, UndoHistory: array of TFigure;
   CurrentLineColor, CurrentFillColor: TColor;
-  CurrentLineWidth: integer;
+  CurrentLineWidth, CurrentFillStyle: integer;
 
 implementation
 
@@ -84,6 +127,7 @@ procedure TDrawForm.FormCreate(Sender: TObject);
 var
   b: TSpeedButton;
   i: integer;
+  FillStyle: TFillStyleItem;
   CurrentIcon: TPicture;
   IconsPerRow: integer;
 begin
@@ -102,6 +146,9 @@ begin
   IconsPerRow := ToolsPanel.Width div
     (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
 
+  ToolsPanel.Height := (Length(FiguresBase) div IconsPerRow) *
+    (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) + TOOL_BUTTON_PADDING * 2;
+
   for i:=Low(FiguresBase) to High(FiguresBase) do
   begin
     b := TSpeedButton.Create(ToolsPanel);
@@ -115,28 +162,19 @@ begin
     b.Glyph := CurrentIcon.Bitmap;
     CurrentIcon.Free;
 
-    b.Left := (i mod IconsPerRow)*(TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
+    b.Left := (i mod IconsPerRow) * (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
               TOOL_BUTTON_PADDING;
-    b.Top  := (i div IconsPerRow)*(TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
+    b.Top  := (i div IconsPerRow) * (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
               TOOL_BUTTON_PADDING;
     b.Width := TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN;
     b.Height := b.Width;
   end;
-
   CurrentFigure := FiguresBase[0];
-end;
 
-procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
-var
-  i: integer;
-begin
-  for i := Low(UndoHistory) to High(UndoHistory) do
-    FreeAndNil(UndoHistory[i]);
-  SetLength(UndoHistory, 0);
-  for i := Low(CanvasItems) to High(CanvasItems) do
-    FreeAndNil(CanvasItems[i]);
-  SetLength(CanvasItems, 0);
-  CurrentFigure := nil;
+  for FillStyle in FILL_STYLES do
+    ChangeFillStyleComboBox.Items.Add(FillStyle.Name);
+  CurrentFillStyle := START_FILL_STYLE;
+  ChangeFillStyleComboBox.ItemIndex := CurrentFillStyle;
 end;
 
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
@@ -151,14 +189,15 @@ begin
   begin
     IsDrawing := true;
     SetLength(CanvasItems, Length(CanvasItems) + 1);
-    CanvasItems[High(CanvasItems)] := CurrentFigure.Create(X, Y, CurrentLineColor,
-      CurrentLineWidth, CurrentFillColor);
+    CanvasItems[High(CanvasItems)] := CurrentFigure.Create(X, Y,
+      CurrentLineColor, CurrentLineWidth,
+      CurrentFillColor, FILL_STYLES[CurrentFillStyle].BrushStyle);
   end;
   MainPaintBox.Invalidate;
 end;
 
-procedure TDrawForm.MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
+procedure TDrawForm.MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: Integer);
 begin
   if IsDrawing then
   begin
@@ -190,6 +229,7 @@ begin
   begin
     Pen.Color := clWhite;
     Brush.Color := clWhite;
+    Brush.Style := bsSolid;
     Rectangle(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
     for i in CanvasItems do
@@ -204,6 +244,11 @@ end;
 procedure TDrawForm.ChangeFillColorButtonColorChanged(Sender: TObject);
 begin
   CurrentFillColor := ChangeFillColorButton.ButtonColor;
+end;
+
+procedure TDrawForm.ChangeFillStyleComboBoxChange(Sender: TObject);
+begin
+  CurrentFillStyle := ChangeFillStyleComboBox.ItemIndex;
 end;
 
 procedure TDrawForm.PenWidthSpinEditChange(Sender: TObject);
@@ -241,6 +286,18 @@ end;
 procedure TDrawForm.ExitMenuItemClick(Sender: TObject);
 begin
   DrawForm.Close;
+end;
+
+procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+var
+  i: integer;
+begin
+  for i := Low(UndoHistory) to High(UndoHistory) do
+    FreeAndNil(UndoHistory[i]);
+  SetLength(UndoHistory, 0);
+  for i := Low(CanvasItems) to High(CanvasItems) do
+    FreeAndNil(CanvasItems[i]);
+  SetLength(CanvasItems, 0);
 end;
 
 end.

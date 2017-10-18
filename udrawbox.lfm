@@ -1,20 +1,21 @@
 object DrawForm: TDrawForm
-  Left = 301
-  Height = 497
-  Top = 120
-  Width = 779
+  Left = 182
+  Height = 639
+  Top = 31
+  Width = 1040
   Caption = 'DrawForm'
-  ClientHeight = 477
-  ClientWidth = 779
+  ClientHeight = 619
+  ClientWidth = 1040
   Menu = MainMenu
+  OnClose = FormClose
   OnCreate = FormCreate
   LCLVersion = '1.6.2.0'
   object ChangeLineColorButton: TColorButton
     AnchorSideRight.Control = MainPaintBox
     Left = 0
     Height = 25
-    Top = 360
-    Width = 107
+    Top = 466
+    Width = 144
     Anchors = [akLeft, akRight, akBottom]
     BorderWidth = 2
     ButtonColorSize = 16
@@ -23,10 +24,10 @@ object DrawForm: TDrawForm
     OnColorChanged = ChangeLineColorButtonColorChanged
   end
   object MainPaintBox: TPaintBox
-    Left = 107
-    Height = 477
+    Left = 144
+    Height = 619
     Top = 0
-    Width = 672
+    Width = 896
     Anchors = [akTop, akLeft, akRight, akBottom]
     OnMouseDown = MainPaintBoxMouseDown
     OnMouseMove = MainPaintBoxMouseMove
@@ -37,8 +38,8 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 23
-    Top = 454
-    Width = 106
+    Top = 594
+    Width = 143
     Anchors = [akLeft, akRight, akBottom]
     MinValue = 1
     OnChange = PenWidthSpinEditChange
@@ -47,10 +48,10 @@ object DrawForm: TDrawForm
   end
   object LineColorLabel: TLabel
     AnchorSideRight.Control = MainPaintBox
-    Left = 1
+    Left = 0
     Height = 15
-    Top = 344
-    Width = 106
+    Top = 450
+    Width = 144
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line color:'
     ParentColor = False
@@ -59,8 +60,8 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 15
-    Top = 438
-    Width = 106
+    Top = 578
+    Width = 143
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line width:'
     ParentColor = False
@@ -70,7 +71,7 @@ object DrawForm: TDrawForm
     Left = 1
     Height = 200
     Top = 0
-    Width = 106
+    Width = 143
     Anchors = [akTop, akLeft, akRight]
     TabOrder = 1
   end
@@ -78,8 +79,8 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 0
     Height = 25
-    Top = 408
-    Width = 107
+    Top = 510
+    Width = 144
     Anchors = [akLeft, akRight, akBottom]
     BorderWidth = 2
     ButtonColorSize = 16
@@ -89,16 +90,38 @@ object DrawForm: TDrawForm
   end
   object FillColorLabel: TLabel
     AnchorSideRight.Control = MainPaintBox
-    Left = 1
+    Left = 0
     Height = 15
-    Top = 392
-    Width = 106
+    Top = 494
+    Width = 144
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Fill color:'
     ParentColor = False
   end
+  object ChangeFillStyleComboBox: TComboBox
+    AnchorSideRight.Control = MainPaintBox
+    Left = 1
+    Height = 23
+    Top = 553
+    Width = 143
+    Anchors = [akLeft, akRight, akBottom]
+    ItemHeight = 15
+    OnChange = ChangeFillStyleComboBoxChange
+    Style = csDropDownList
+    TabOrder = 2
+  end
+  object FillStyleLabel: TLabel
+    AnchorSideRight.Control = MainPaintBox
+    Left = 0
+    Height = 15
+    Top = 537
+    Width = 144
+    Anchors = [akLeft, akRight, akBottom]
+    Caption = 'Fill style:'
+    ParentColor = False
+  end
   object MainMenu: TMainMenu
-    left = 80
+    left = 232
     object FileMenuItem: TMenuItem
       Caption = 'File'
       object ExitMenuItem: TMenuItem
@@ -224,9 +247,10 @@ object DrawForm: TDrawForm
       'ColorS=F0FBFF'
       'ColorT=A4A0A0'
     )
-    left = 40
+    left = 320
   end
   object EditorActionList: TActionList
+    left = 152
     object UndoAction: TAction
       OnExecute = UndoActionExecute
       ShortCut = 16474

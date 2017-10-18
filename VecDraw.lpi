@@ -92,7 +92,6 @@
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <DebugInfoType Value="dsDwarf2Set"/>
         <UseHeaptrc Value="True"/>
         <TrashVariables Value="True"/>
         <UseExternalDbgSyms Value="True"/>
@@ -103,6 +102,9 @@
         </Win32>
       </Options>
     </Linking>
+    <Other>
+      <CustomOptions Value="-dDEBUG"/>
+    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
