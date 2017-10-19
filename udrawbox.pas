@@ -15,8 +15,10 @@ type
   TDrawForm = class(TForm)
     ChangeFillColorButton: TColorButton;
     ChangeFillStyleComboBox: TComboBox;
+    ChangeLineStyleComboBox: TComboBox;
     FillColorLabel: TLabel;
     FillStyleLabel: TLabel;
+    LineStyleLabel: TLabel;
     LineWidthLabel: TLabel;
     DelimeterMenuItem: TMenuItem;
     ClearAllMenuItem: TMenuItem;
@@ -38,6 +40,7 @@ type
     MainPaintBox: TPaintBox;
     PenWidthSpinEdit: TSpinEdit;
     procedure ChangeFillStyleComboBoxChange(Sender: TObject);
+    procedure ChangeLineStyleComboBoxChange(Sender: TObject);
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -67,6 +70,10 @@ type
     Name: string;
     BrushStyle: TBrushStyle;
   end;
+  TLineStyleItem = record
+    Name: string;
+    PenStyle: TPenStyle;
+  end;
 
 const
   TOOL_BUTTON_SIZE = 32;
@@ -74,8 +81,36 @@ const
   TOOL_BUTTON_PADDING = 1;
   START_LINE_COLOR = clBlack;
   START_FILL_COLOR = clWhite;
+  START_LINE_STYLE = 0; //index of LINE_STYLES
   START_FILL_STYLE = 1; //index of FILL_STYLES
   START_WIDTH = 1;
+  LINE_STYLES: array[0..5] of TLineStyleItem =
+    (
+      (
+        Name: 'Solid';
+        PenStyle: psSolid
+      ),
+      (
+        Name: 'No line';
+        PenStyle: psClear
+      ),
+      (
+        Name: 'Dots';
+        PenStyle: psDot
+      ),
+      (
+        Name: 'Dashes';
+        PenStyle: psDash
+      ),
+      (
+        Name: 'Dash dots';
+        PenStyle: psDashDot
+      ),
+      (
+        Name: 'Dash dot dots';
+        PenStyle: psDashDotDot
+      )
+    );
   FILL_STYLES: array[0..7] of TFillStyleItem =
     (
       (
@@ -112,13 +147,14 @@ const
       )
     );
 
+
 var
   DrawForm: TDrawForm;
   IsDrawing: boolean;
   CurrentFigure: TFigureClass;
   CanvasItems, UndoHistory: array of TFigure;
   CurrentLineColor, CurrentFillColor: TColor;
-  CurrentLineWidth, CurrentFillStyle: integer;
+  CurrentLineWidth, CurrentLineStyle, CurrentFillStyle: integer;
 
 implementation
 
@@ -131,6 +167,7 @@ var
   b: TSpeedButton;
   i: integer;
   FillStyle: TFillStyleItem;
+  LineStyle: TLineStyleItem;
   CurrentIcon: TPicture;
   IconsPerRow: integer;
 begin
@@ -177,6 +214,10 @@ begin
       b.Click;
   end;
 
+  for LineStyle in LINE_STYLES do
+    ChangeLineStyleComboBox.Items.Add(LineStyle.Name);
+  CurrentLineStyle := START_Line_STYLE;
+  ChangeLineStyleComboBox.ItemIndex := CurrentLineStyle;
 
   for FillStyle in FILL_STYLES do
     ChangeFillStyleComboBox.Items.Add(FillStyle.Name);
@@ -201,7 +242,8 @@ begin
     SetLength(CanvasItems, Length(CanvasItems) + 1);
     CanvasItems[High(CanvasItems)] := CurrentFigure.Create(X, Y,
       CurrentLineColor, CurrentLineWidth,
-      CurrentFillColor, FILL_STYLES[CurrentFillStyle].BrushStyle);
+      CurrentFillColor, LINE_STYLES[CurrentLineStyle].PenStyle,
+      FILL_STYLES[CurrentFillStyle].BrushStyle);
   end;
   MainPaintBox.Invalidate;
 end;
@@ -257,6 +299,11 @@ end;
 procedure TDrawForm.ChangeFillStyleComboBoxChange(Sender: TObject);
 begin
   CurrentFillStyle := ChangeFillStyleComboBox.ItemIndex;
+end;
+
+procedure TDrawForm.ChangeLineStyleComboBoxChange(Sender: TObject);
+begin
+  CurrentLineStyle := ChangeLineStyleComboBox.ItemIndex;
 end;
 
 procedure TDrawForm.PenWidthSpinEditChange(Sender: TObject);

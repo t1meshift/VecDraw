@@ -17,10 +17,12 @@ type
     Vertexes: TPointList;
     LineColor, FillColor: TColor;
     LineWidth: integer;
+    LineStyle: TPenStyle;
     FillStyle: TBrushStyle;
+    procedure SetCanvasStyles(ACanvas: TCanvas);
   public
-    constructor Create(X, Y: integer; ALineColor: TColor;
-      ALineWidth: integer; AFillColor: TColor; AFillStyle: TBrushStyle);
+    constructor Create(X, Y: integer; ALineColor: TColor; ALineWidth: integer;
+      AFillColor: TColor; ALineStyle: TPenStyle; AFillStyle: TBrushStyle);
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
     procedure MouseMove(X, Y: integer); virtual; abstract;
   end;
@@ -62,28 +64,38 @@ implementation
 
 { TFigure }
 
-constructor TFigure.Create(X, Y: integer; ALineColor: TColor;
-  ALineWidth: integer; AFillColor: TColor; AFillStyle: TBrushStyle);
+constructor TFigure.Create(X, Y: integer;
+  ALineColor: TColor; ALineWidth: integer; AFillColor: TColor;
+  ALineStyle: TPenStyle; AFillStyle: TBrushStyle);
 begin
   SetLength(Vertexes, 2);
   Vertexes[0] := Point(X, Y);
   Vertexes[1] := Vertexes[0];
   LineColor := ALineColor;
   LineWidth := ALineWidth;
+  LineStyle := ALineStyle;
   FillColor := AFillColor;
   FillStyle := AFillStyle;
+end;
+
+procedure TFigure.SetCanvasStyles(ACanvas: TCanvas);
+begin
+  with ACanvas do
+  begin
+    Pen.Color := LineColor;
+    Pen.Width := LineWidth;
+    Pen.Style := LineStyle;
+    Brush.Color := FillColor;
+    Brush.Style := FillStyle;
+  end;
 end;
 
 { TPolyLine }
 
 procedure TPolyLine.Draw(ACanvas: TCanvas);
 begin
-  with ACanvas do
-  begin
-    Pen.Color := LineColor;
-    Pen.Width := LineWidth;
-    Polyline(Vertexes);
-  end;
+  SetCanvasStyles(ACanvas);
+  ACanvas.Polyline(Vertexes);
 end;
 
 procedure TPolyLine.MouseMove(X, Y: integer);
@@ -103,14 +115,8 @@ end;
 
 procedure TRectangle.Draw(ACanvas: TCanvas);
 begin
-  with ACanvas do
-  begin
-    Pen.Color := LineColor;
-    Pen.Width := LineWidth;
-    Brush.Color := FillColor;
-    Brush.Style := FillStyle;
-    Rectangle(Vertexes[0].x, Vertexes[0].y, Vertexes[1].x, Vertexes[1].y);
-  end;
+    SetCanvasStyles(ACanvas);
+    ACanvas.Rectangle(Vertexes[0].x, Vertexes[0].y, Vertexes[1].x, Vertexes[1].y);
 end;
 
 procedure TRectangle.MouseMove(X, Y: integer);
@@ -122,14 +128,8 @@ end;
 
 procedure TEllipse.Draw(ACanvas: TCanvas);
 begin
-  with ACanvas do
-  begin
-    Pen.Color := LineColor;
-    Pen.Width := LineWidth;
-    Brush.Color := FillColor;
-    Brush.Style := FillStyle;
-    Ellipse(Vertexes[0].x, Vertexes[0].y, Vertexes[1].x, Vertexes[1].y);
-  end;
+  SetCanvasStyles(ACanvas);
+  ACanvas.Ellipse(Vertexes[0].x, Vertexes[0].y, Vertexes[1].x, Vertexes[1].y);
 end;
 
 procedure TEllipse.MouseMove(X, Y: integer);

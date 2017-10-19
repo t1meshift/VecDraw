@@ -1,11 +1,11 @@
 object DrawForm: TDrawForm
-  Left = 267
-  Height = 639
-  Top = 309
-  Width = 1040
+  Left = 163
+  Height = 640
+  Top = 278
+  Width = 1024
   Caption = 'DrawForm'
-  ClientHeight = 619
-  ClientWidth = 1040
+  ClientHeight = 620
+  ClientWidth = 1024
   Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
@@ -13,10 +13,10 @@ object DrawForm: TDrawForm
   LCLVersion = '1.6.2.0'
   object ChangeLineColorButton: TColorButton
     AnchorSideRight.Control = MainPaintBox
-    Left = 0
+    Left = 1
     Height = 25
-    Top = 466
-    Width = 144
+    Top = 432
+    Width = 143
     Anchors = [akLeft, akRight, akBottom]
     BorderWidth = 2
     ButtonColorSize = 16
@@ -26,9 +26,9 @@ object DrawForm: TDrawForm
   end
   object MainPaintBox: TPaintBox
     Left = 144
-    Height = 619
+    Height = 620
     Top = 0
-    Width = 896
+    Width = 880
     Anchors = [akTop, akLeft, akRight, akBottom]
     OnMouseDown = MainPaintBoxMouseDown
     OnMouseMove = MainPaintBoxMouseMove
@@ -39,7 +39,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 23
-    Top = 594
+    Top = 595
     Width = 143
     Anchors = [akLeft, akRight, akBottom]
     MinValue = 1
@@ -49,10 +49,10 @@ object DrawForm: TDrawForm
   end
   object LineColorLabel: TLabel
     AnchorSideRight.Control = MainPaintBox
-    Left = 0
+    Left = 2
     Height = 15
-    Top = 450
-    Width = 144
+    Top = 416
+    Width = 142
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line color:'
     ParentColor = False
@@ -61,7 +61,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 15
-    Top = 578
+    Top = 579
     Width = 143
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line width:'
@@ -80,7 +80,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 0
     Height = 25
-    Top = 510
+    Top = 511
     Width = 144
     Anchors = [akLeft, akRight, akBottom]
     BorderWidth = 2
@@ -91,20 +91,20 @@ object DrawForm: TDrawForm
   end
   object FillColorLabel: TLabel
     AnchorSideRight.Control = MainPaintBox
-    Left = 0
+    Left = 2
     Height = 15
-    Top = 494
-    Width = 144
+    Top = 495
+    Width = 142
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Fill color:'
     ParentColor = False
   end
   object ChangeFillStyleComboBox: TComboBox
     AnchorSideRight.Control = MainPaintBox
-    Left = 1
+    Left = 2
     Height = 23
-    Top = 553
-    Width = 143
+    Top = 554
+    Width = 142
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 15
     OnChange = ChangeFillStyleComboBoxChange
@@ -113,13 +113,35 @@ object DrawForm: TDrawForm
   end
   object FillStyleLabel: TLabel
     AnchorSideRight.Control = MainPaintBox
-    Left = 0
+    Left = 2
     Height = 15
-    Top = 537
-    Width = 144
+    Top = 538
+    Width = 142
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Fill style:'
     ParentColor = False
+  end
+  object LineStyleLabel: TLabel
+    AnchorSideRight.Control = MainPaintBox
+    Left = 1
+    Height = 15
+    Top = 456
+    Width = 143
+    Anchors = [akLeft, akRight, akBottom]
+    Caption = 'Line style:'
+    ParentColor = False
+  end
+  object ChangeLineStyleComboBox: TComboBox
+    AnchorSideRight.Control = MainPaintBox
+    Left = 2
+    Height = 23
+    Top = 472
+    Width = 142
+    Anchors = [akLeft, akRight, akBottom]
+    ItemHeight = 15
+    OnChange = ChangeLineStyleComboBoxChange
+    Style = csDropDownList
+    TabOrder = 3
   end
   object MainMenu: TMainMenu
     left = 232
