@@ -18,6 +18,8 @@ type
     FillColorLabel: TLabel;
     FillStyleLabel: TLabel;
     LineWidthLabel: TLabel;
+    DelimeterMenuItem: TMenuItem;
+    ClearAllMenuItem: TMenuItem;
     ToolsPanel: TPanel;
     LineColorLabel: TLabel;
     RedoAction: TAction;
@@ -36,6 +38,7 @@ type
     MainPaintBox: TPaintBox;
     PenWidthSpinEdit: TSpinEdit;
     procedure ChangeFillStyleComboBoxChange(Sender: TObject);
+    procedure ClearAllMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
@@ -71,7 +74,7 @@ const
   TOOL_BUTTON_PADDING = 1;
   START_LINE_COLOR = clBlack;
   START_FILL_COLOR = clWhite;
-  START_FILL_STYLE = 0; //index of FILL_STYLES
+  START_FILL_STYLE = 1; //index of FILL_STYLES
   START_WIDTH = 1;
   FILL_STYLES: array[0..7] of TFillStyleItem =
     (
@@ -131,6 +134,7 @@ var
   CurrentIcon: TPicture;
   IconsPerRow: integer;
 begin
+  DrawForm.DoubleBuffered := true;
   DrawForm.Caption := ApplicationName;
   isDrawing := false;
 
@@ -168,8 +172,11 @@ begin
               TOOL_BUTTON_PADDING;
     b.Width := TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN;
     b.Height := b.Width;
+
+    if i = 0 then
+      b.Click;
   end;
-  CurrentFigure := FiguresBase[0];
+
 
   for FillStyle in FILL_STYLES do
     ChangeFillStyleComboBox.Items.Add(FillStyle.Name);
@@ -178,8 +185,11 @@ begin
 end;
 
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
+var
+  b: TSpeedButton;
 begin
-  CurrentFigure := FiguresBase[(Sender as TSpeedButton).Tag];
+  b := Sender as TSpeedButton;
+  CurrentFigure := FiguresBase[b.Tag];
 end;
 
 procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
@@ -227,10 +237,8 @@ var
 begin
   with MainPaintBox.Canvas do
   begin
-    Pen.Color := clWhite;
     Brush.Color := clWhite;
-    Brush.Style := bsSolid;
-    Rectangle(0, 0, MainPaintBox.Width, MainPaintBox.Height);
+    FillRect(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
     for i in CanvasItems do
       i.Draw(MainPaintBox.Canvas);
@@ -278,6 +286,19 @@ begin
   end;
 end;
 
+procedure TDrawForm.ClearAllMenuItemClick(Sender: TObject);
+var
+  i: integer;
+begin
+  for i := Low(UndoHistory) to High(UndoHistory) do
+    FreeAndNil(UndoHistory[i]);
+  SetLength(UndoHistory, 0);
+  for i := Low(CanvasItems) to High(CanvasItems) do
+    FreeAndNil(CanvasItems[i]);
+  SetLength(CanvasItems, 0);
+  MainPaintBox.Invalidate;
+end;
+
 procedure TDrawForm.AboutMenuItemClick(Sender: TObject);
 begin
   AboutForm.ShowModal;
@@ -289,15 +310,8 @@ begin
 end;
 
 procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
-var
-  i: integer;
 begin
-  for i := Low(UndoHistory) to High(UndoHistory) do
-    FreeAndNil(UndoHistory[i]);
-  SetLength(UndoHistory, 0);
-  for i := Low(CanvasItems) to High(CanvasItems) do
-    FreeAndNil(CanvasItems[i]);
-  SetLength(CanvasItems, 0);
+  ClearAllMenuItemClick(nil);
 end;
 
 end.

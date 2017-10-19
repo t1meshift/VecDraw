@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 182
+  Left = 267
   Height = 639
-  Top = 31
+  Top = 309
   Width = 1040
   Caption = 'DrawForm'
   ClientHeight = 619
@@ -9,6 +9,7 @@ object DrawForm: TDrawForm
   Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
+  Position = poDesktopCenter
   LCLVersion = '1.6.2.0'
   object ChangeLineColorButton: TColorButton
     AnchorSideRight.Control = MainPaintBox
@@ -132,6 +133,14 @@ object DrawForm: TDrawForm
     end
     object EditMenuItem: TMenuItem
       Caption = 'Edit'
+      object ClearAllMenuItem: TMenuItem
+        Caption = 'Clear all'
+        OnClick = ClearAllMenuItemClick
+      end
+      object DelimeterMenuItem: TMenuItem
+        Caption = '--------'
+        Enabled = False
+      end
       object UndoMenuItem: TMenuItem
         Action = UndoAction
         Caption = 'Undo'
