@@ -18,6 +18,7 @@ type
     ChangeLineStyleComboBox: TComboBox;
     FillColorLabel: TLabel;
     FillStyleLabel: TLabel;
+    CurrentToolImage: TImage;
     ScaleFloatSpin: TFloatSpinEdit;
     ScaleLabel: TLabel;
     LineStyleLabel: TLabel;
@@ -314,6 +315,7 @@ var
 begin
   b := Sender as TSpeedButton;
   CurrentFigure := FiguresBase[b.Tag];
+  CurrentToolImage.Picture.Bitmap := b.Glyph;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
