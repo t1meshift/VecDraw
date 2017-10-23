@@ -5,8 +5,8 @@ unit UDrawBox;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
-  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UFiguresBase;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
+  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UTransform;
 
 type
 
@@ -18,10 +18,14 @@ type
     ChangeLineStyleComboBox: TComboBox;
     FillColorLabel: TLabel;
     FillStyleLabel: TLabel;
+    ScaleFloatSpin: TFloatSpinEdit;
+    ScaleLabel: TLabel;
     LineStyleLabel: TLabel;
     LineWidthLabel: TLabel;
     DelimeterMenuItem: TMenuItem;
     ClearAllMenuItem: TMenuItem;
+    HorizontalScrollBar: TScrollBar;
+    VerticalScrollBar: TScrollBar;
     ToolsPanel: TPanel;
     LineColorLabel: TLabel;
     RedoAction: TAction;
@@ -44,6 +48,8 @@ type
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
+    procedure MainPaintBoxResize(Sender: TObject);
+    procedure ScaleFloatSpinChange(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
     procedure MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -152,7 +158,7 @@ var
   DrawForm: TDrawForm;
   IsDrawing: boolean;
   CurrentFigure: TFigureClass;
-  CanvasItems, UndoHistory: array of TFigure;
+  CanvasItems, UndoHistory: TFigureList;
   CurrentLineColor, CurrentFillColor: TColor;
   CurrentLineWidth, CurrentLineStyle, CurrentFillStyle: integer;
 
@@ -187,7 +193,7 @@ begin
   IconsPerRow := ToolsPanel.Width div
     (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
 
-  ToolsPanel.Height := (Length(FiguresBase) div IconsPerRow) *
+  ToolsPanel.Height := Ceil(Length(FiguresBase) / IconsPerRow) *
     (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) + TOOL_BUTTON_PADDING * 2;
 
   for i:=Low(FiguresBase) to High(FiguresBase) do
@@ -223,6 +229,24 @@ begin
     ChangeFillStyleComboBox.Items.Add(FillStyle.Name);
   CurrentFillStyle := START_FILL_STYLE;
   ChangeFillStyleComboBox.ItemIndex := CurrentFillStyle;
+
+  ScaleFloatSpin.MinValue := ZOOM_MIN * 100;
+  ScaleFloatSpin.MaxValue := ZOOM_MAX * 100;
+
+  CanvasWidth := MainPaintBox.Width;
+  CanvasHeight := MainPaintBox.Height;
+end;
+
+procedure TDrawForm.MainPaintBoxResize(Sender: TObject);
+begin
+  CanvasWidth := MainPaintBox.Width;
+  CanvasHeight := MainPaintBox.Height;
+end;
+
+procedure TDrawForm.ScaleFloatSpinChange(Sender: TObject);
+begin
+  SetScale(ScaleFloatSpin.Value / 100);
+  MainPaintBox.Invalidate;
 end;
 
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
@@ -235,14 +259,17 @@ end;
 
 procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+var
+  WorldStartPoint: TDoublePoint;
 begin
   if Button = mbLeft then
   begin
     IsDrawing := true;
     SetLength(CanvasItems, Length(CanvasItems) + 1);
-    CanvasItems[High(CanvasItems)] := CurrentFigure.Create(X, Y,
-      CurrentLineColor, CurrentLineWidth,
-      CurrentFillColor, LINE_STYLES[CurrentLineStyle].PenStyle,
+    WorldStartPoint := CanvasToWorld(Point(X, Y));
+    CanvasItems[High(CanvasItems)] := CurrentFigure.Create(WorldStartPoint.x,
+      WorldStartPoint.y, CurrentLineColor, CurrentLineWidth, CurrentFillColor,
+      LINE_STYLES[CurrentLineStyle].PenStyle,
       FILL_STYLES[CurrentFillStyle].BrushStyle);
   end;
   MainPaintBox.Invalidate;
@@ -266,6 +293,7 @@ begin
   if Button = mbLeft then
   begin
     IsDrawing := false;
+    CanvasItems[High(CanvasItems)].MouseUp(X, Y);
     MainPaintBox.Invalidate;
     for i := Low(UndoHistory) to High(UndoHistory) do
       FreeAndNil(UndoHistory[i]);
@@ -277,6 +305,7 @@ procedure TDrawForm.MainPaintBoxPaint(Sender: TObject);
 var
   i: TFigure;
 begin
+  ScaleFloatSpin.Value := Scale * 100;
   with MainPaintBox.Canvas do
   begin
     Brush.Color := clWhite;

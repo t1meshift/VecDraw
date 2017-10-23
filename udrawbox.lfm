@@ -1,10 +1,10 @@
 object DrawForm: TDrawForm
-  Left = 163
-  Height = 640
-  Top = 278
+  Left = 347
+  Height = 639
+  Top = 128
   Width = 1024
   Caption = 'DrawForm'
-  ClientHeight = 620
+  ClientHeight = 619
   ClientWidth = 1024
   Menu = MainMenu
   OnClose = FormClose
@@ -15,7 +15,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 25
-    Top = 432
+    Top = 431
     Width = 143
     Anchors = [akLeft, akRight, akBottom]
     BorderWidth = 2
@@ -26,20 +26,21 @@ object DrawForm: TDrawForm
   end
   object MainPaintBox: TPaintBox
     Left = 144
-    Height = 620
+    Height = 601
     Top = 0
-    Width = 880
+    Width = 864
     Anchors = [akTop, akLeft, akRight, akBottom]
     OnMouseDown = MainPaintBoxMouseDown
     OnMouseMove = MainPaintBoxMouseMove
     OnMouseUp = MainPaintBoxMouseUp
     OnPaint = MainPaintBoxPaint
+    OnResize = MainPaintBoxResize
   end
   object PenWidthSpinEdit: TSpinEdit
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 23
-    Top = 595
+    Top = 594
     Width = 143
     Anchors = [akLeft, akRight, akBottom]
     MinValue = 1
@@ -51,7 +52,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 2
     Height = 15
-    Top = 416
+    Top = 415
     Width = 142
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line color:'
@@ -61,7 +62,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 15
-    Top = 579
+    Top = 578
     Width = 143
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line width:'
@@ -80,7 +81,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 0
     Height = 25
-    Top = 511
+    Top = 510
     Width = 144
     Anchors = [akLeft, akRight, akBottom]
     BorderWidth = 2
@@ -93,7 +94,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 2
     Height = 15
-    Top = 495
+    Top = 494
     Width = 142
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Fill color:'
@@ -103,7 +104,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 2
     Height = 23
-    Top = 554
+    Top = 553
     Width = 142
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 15
@@ -115,7 +116,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 2
     Height = 15
-    Top = 538
+    Top = 537
     Width = 142
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Fill style:'
@@ -125,7 +126,7 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 1
     Height = 15
-    Top = 456
+    Top = 455
     Width = 143
     Anchors = [akLeft, akRight, akBottom]
     Caption = 'Line style:'
@@ -135,13 +136,75 @@ object DrawForm: TDrawForm
     AnchorSideRight.Control = MainPaintBox
     Left = 2
     Height = 23
-    Top = 472
+    Top = 471
     Width = 142
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 15
     OnChange = ChangeLineStyleComboBoxChange
     Style = csDropDownList
     TabOrder = 3
+  end
+  object HorizontalScrollBar: TScrollBar
+    AnchorSideLeft.Control = MainPaintBox
+    AnchorSideTop.Control = MainPaintBox
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = MainPaintBox
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 144
+    Height = 18
+    Top = 601
+    Width = 864
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    PageSize = 0
+    TabOrder = 4
+  end
+  object VerticalScrollBar: TScrollBar
+    AnchorSideLeft.Control = MainPaintBox
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = MainPaintBox
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = MainPaintBox
+    AnchorSideBottom.Side = asrBottom
+    Left = 1008
+    Height = 601
+    Top = 0
+    Width = 16
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Kind = sbVertical
+    PageSize = 0
+    TabOrder = 5
+  end
+  object ScaleFloatSpin: TFloatSpinEdit
+    AnchorSideTop.Control = ScaleLabel
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = MainPaintBox
+    Left = 2
+    Height = 23
+    Top = 217
+    Width = 142
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Top = 2
+    Increment = 1
+    MaxValue = 100
+    MinValue = 0
+    OnChange = ScaleFloatSpinChange
+    TabOrder = 6
+    Value = 100
+  end
+  object ScaleLabel: TLabel
+    AnchorSideTop.Control = ToolsPanel
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = MainPaintBox
+    Left = 2
+    Height = 15
+    Top = 200
+    Width = 142
+    Anchors = [akTop, akLeft, akRight]
+    Caption = 'Scale:'
+    ParentColor = False
   end
   object MainMenu: TMainMenu
     left = 232

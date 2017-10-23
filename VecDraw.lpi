@@ -33,7 +33,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="5">
+    <Units Count="6">
       <Unit0>
         <Filename Value="VecDraw.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -60,10 +60,15 @@
         <UnitName Value="UFigures"/>
       </Unit3>
       <Unit4>
-        <Filename Value="ufiguresbase.pas"/>
+        <Filename Value="utransform.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="UFiguresBase"/>
+        <UnitName Value="UTransform"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="utools.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UTools"/>
+      </Unit5>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
