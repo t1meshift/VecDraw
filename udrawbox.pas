@@ -266,22 +266,18 @@ var
   i: TFigure;
   HorMin, HorMax, VerMin, VerMax: integer;
 begin
-  HorizontalScrollBar.Min := Round(
-    Min(CanvasOffset.x - CANVAS_OFFSET_BORDER_SIZE, -CANVAS_OFFSET_BORDER_SIZE)
-  );
-  HorizontalScrollBar.Max := Round(
-    Max(CanvasOffset.x + CANVAS_OFFSET_BORDER_SIZE, CANVAS_OFFSET_BORDER_SIZE)
-  );
-  VerticalScrollBar.Min := Round(
-    Min(CanvasOffset.y - CANVAS_OFFSET_BORDER_SIZE, -CANVAS_OFFSET_BORDER_SIZE)
-  );
-  VerticalScrollBar.Max := Round(
-    Max(CanvasOffset.y + CANVAS_OFFSET_BORDER_SIZE, CANVAS_OFFSET_BORDER_SIZE)
-  );
-  HorizontalScrollBar.Position := Round(CanvasOffset.x);
-  VerticalScrollBar.Position := Round(CanvasOffset.y);
-  for i in CanvasItems do
+  HorMin := Round(Min(CanvasOffset.x - CANVAS_OFFSET_BORDER_SIZE,
+    -CANVAS_OFFSET_BORDER_SIZE));
+  HorMax := Round(Max(CanvasOffset.x + CANVAS_OFFSET_BORDER_SIZE,
+    CANVAS_OFFSET_BORDER_SIZE));
+  VerMin := Round(Min(CanvasOffset.y - CANVAS_OFFSET_BORDER_SIZE,
+    -CANVAS_OFFSET_BORDER_SIZE));
+  VerMax := Round(Max(CanvasOffset.y + CANVAS_OFFSET_BORDER_SIZE,
+    CANVAS_OFFSET_BORDER_SIZE));
+
+  if Length(CanvasItems) > 0 then
   begin
+    i := CanvasItems[High(CanvasItems)];
     HorMin := Round(Min(HorizontalScrollBar.Min,
       i.TopLeftBorder.x - CANVAS_OFFSET_BORDER_SIZE));
     HorMax := Round(Max(HorizontalScrollBar.Max,
@@ -295,6 +291,8 @@ begin
   HorizontalScrollBar.Max := HorMax;
   VerticalScrollBar.Min := VerMin;
   VerticalScrollBar.Max := VerMax;
+  HorizontalScrollBar.Position := Round(CanvasOffset.x);
+  VerticalScrollBar.Position := Round(CanvasOffset.y);
 end;
 
 procedure TDrawForm.MainPaintBoxResize(Sender: TObject);
