@@ -22,11 +22,12 @@ type
     LineStyle: TPenStyle;
     FillStyle: TBrushStyle;
     Button: TMouseButton;
+    FCanBeDestroyed: boolean;
     function FTopLeft: TDoublePoint;
     function FBottomRight: TDoublePoint;
     procedure SetCanvasStyles(ACanvas: TCanvas);
   public
-    CanBeDestroyed: boolean;
+    property CanBeDestroyed: boolean read FCanBeDestroyed;
     property TopLeftBorder: TDoublePoint read FTopLeft;
     property BottomRightBorder: TDoublePoint read FBottomRight;
     constructor Create(X, Y: double; ALineColor: TColor; ALineWidth: integer;
@@ -135,7 +136,7 @@ begin
 
   Vertexes[0] := DoublePoint(0,0);
   Vertexes[1] := Vertexes[0];
-  CanBeDestroyed := true;
+  FCanBeDestroyed := true;
 end;
 
 procedure TMagnifier.Draw(ACanvas: TCanvas);
@@ -168,7 +169,7 @@ end;
 procedure THand.MouseUp(X, Y: integer);
 begin
   inherited MouseUp(X, Y);
-  CanBeDestroyed := true;
+  FCanBeDestroyed := true;
 end;
 
 procedure THand.Draw(ACanvas: TCanvas);
@@ -191,7 +192,7 @@ begin
   FillColor := AFillColor;
   FillStyle := AFillStyle;
   Button := AButton;
-  CanBeDestroyed := false;
+  FCanBeDestroyed := false;
 end;
 
 procedure TFigure.MouseUp(X, Y: integer);
@@ -257,7 +258,7 @@ begin
     Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
   end
   else
-    CanBeDestroyed := true;
+    FCanBeDestroyed := true;
 end;
 
 { TLine }
@@ -267,7 +268,7 @@ begin
   if Button = mbLeft then
     Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
   else
-    CanBeDestroyed := true;
+    FCanBeDestroyed := true;
 end;
 
 { TRectangle }
@@ -288,7 +289,7 @@ begin
   if Button = mbLeft then
     Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
   else
-    CanBeDestroyed := true;
+    FCanBeDestroyed := true;
 end;
 
 { TEllipse }
@@ -309,7 +310,7 @@ begin
   if Button = mbLeft then
     Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
   else
-    CanBeDestroyed := true;
+    FCanBeDestroyed := true;
 end;
 
 procedure RegisterFigures(AFigures: TFigureClassList);

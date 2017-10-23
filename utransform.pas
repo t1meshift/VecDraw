@@ -66,9 +66,9 @@ end;
 
 procedure SetScale(AScale: double);
 begin
-  if Scale < ZOOM_MIN then
+  if AScale <= ZOOM_MIN then
      Scale := ZOOM_MIN
-  else if Scale > ZOOM_MAX then
+  else if AScale >= ZOOM_MAX then
     Scale := ZOOM_MAX
   else
     Scale := AScale;
