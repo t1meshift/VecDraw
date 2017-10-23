@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 195
+  Left = 180
   Height = 639
-  Top = 44
+  Top = 46
   Width = 1024
   Caption = 'DrawForm'
   ClientHeight = 619
@@ -159,6 +159,7 @@ object DrawForm: TDrawForm
     Anchors = [akTop, akLeft, akRight, akBottom]
     PageSize = 0
     TabOrder = 4
+    OnChange = HorizontalScrollBarChange
   end
   object VerticalScrollBar: TScrollBar
     AnchorSideLeft.Control = MainPaintBox
@@ -176,6 +177,7 @@ object DrawForm: TDrawForm
     Kind = sbVertical
     PageSize = 0
     TabOrder = 5
+    OnChange = VerticalScrollBarChange
   end
   object ScaleFloatSpin: TFloatSpinEdit
     AnchorSideTop.Control = ScaleLabel

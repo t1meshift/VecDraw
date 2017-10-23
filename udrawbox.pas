@@ -48,6 +48,9 @@ type
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
+    procedure HorizontalScrollBarChange(Sender: TObject);
+    procedure VerticalScrollBarChange(Sender: TObject);
+    procedure SetScrollBars;
     procedure MainPaintBoxResize(Sender: TObject);
     procedure ScaleFloatSpinChange(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
@@ -82,14 +85,15 @@ type
   end;
 
 const
-  TOOL_BUTTON_SIZE = 32;
-  TOOL_BUTTON_MARGIN = 2;
-  TOOL_BUTTON_PADDING = 1;
-  START_LINE_COLOR = clBlack;
-  START_FILL_COLOR = clWhite;
-  START_LINE_STYLE = 0; //index of LINE_STYLES
-  START_FILL_STYLE = 1; //index of FILL_STYLES
-  START_WIDTH = 1;
+  TOOL_BUTTON_SIZE: integer = 32;
+  TOOL_BUTTON_MARGIN: integer = 2;
+  TOOL_BUTTON_PADDING: integer = 1;
+  START_LINE_COLOR: TColor = clBlack;
+  START_FILL_COLOR: TColor = clWhite;
+  START_LINE_STYLE: integer = 0; //index of LINE_STYLES
+  START_FILL_STYLE: integer = 1; //index of FILL_STYLES
+  START_WIDTH: integer = 1;
+  CANVAS_OFFSET_BORDER_SIZE: integer = 10;
   LINE_STYLES: array[0..5] of TLineStyleItem =
     (
       (
@@ -161,6 +165,7 @@ var
   CanvasItems, UndoHistory: TFigureList;
   CurrentLineColor, CurrentFillColor: TColor;
   CurrentLineWidth, CurrentLineStyle, CurrentFillStyle: integer;
+  WorldTopLeft, WorldBottomRight: TDoublePoint;
 
 implementation
 
@@ -233,8 +238,57 @@ begin
   ScaleFloatSpin.MinValue := ZOOM_MIN * 100;
   ScaleFloatSpin.MaxValue := ZOOM_MAX * 100;
 
+  HorizontalScrollBar.Min := -CANVAS_OFFSET_BORDER_SIZE;
+  HorizontalScrollBar.Max := CANVAS_OFFSET_BORDER_SIZE;
+
+  VerticalScrollBar.Min := -CANVAS_OFFSET_BORDER_SIZE;
+  VerticalScrollBar.Max := CANVAS_OFFSET_BORDER_SIZE;
+
   CanvasWidth := MainPaintBox.Width;
   CanvasHeight := MainPaintBox.Height;
+end;
+
+procedure TDrawForm.HorizontalScrollBarChange(Sender: TObject);
+begin
+  CanvasOffset.x := HorizontalScrollBar.Position;
+  MainPaintBox.Invalidate;
+end;
+
+procedure TDrawForm.VerticalScrollBarChange(Sender: TObject);
+begin
+  CanvasOffset.y := VerticalScrollBar.Position;
+  MainPaintBox.Invalidate;
+end;
+
+procedure TDrawForm.SetScrollBars;
+var
+  i: TFigure;
+begin
+  HorizontalScrollBar.Min := Round(
+    Min(CanvasOffset.x - CANVAS_OFFSET_BORDER_SIZE, -CANVAS_OFFSET_BORDER_SIZE)
+  );
+  HorizontalScrollBar.Max := Round(
+    Max(CanvasOffset.x + CANVAS_OFFSET_BORDER_SIZE, CANVAS_OFFSET_BORDER_SIZE)
+  );
+  VerticalScrollBar.Min := Round(
+    Min(CanvasOffset.y - CANVAS_OFFSET_BORDER_SIZE, -CANVAS_OFFSET_BORDER_SIZE)
+  );
+  VerticalScrollBar.Max := Round(
+    Max(CanvasOffset.y + CANVAS_OFFSET_BORDER_SIZE, CANVAS_OFFSET_BORDER_SIZE)
+  );
+  HorizontalScrollBar.Position := Round(CanvasOffset.x);
+  VerticalScrollBar.Position := Round(CanvasOffset.y);
+  for i in CanvasItems do
+  begin
+    HorizontalScrollBar.Min := Round(Min(HorizontalScrollBar.Min,
+      Round(i.TopLeftBorder.x) - CANVAS_OFFSET_BORDER_SIZE));
+    HorizontalScrollBar.Max := Round(Max(HorizontalScrollBar.Max,
+      Round(i.BottomRightBorder.x) + CANVAS_OFFSET_BORDER_SIZE));
+    VerticalScrollBar.Min := Round(Min(VerticalScrollBar.Min,
+      Round(i.TopLeftBorder.y) - CANVAS_OFFSET_BORDER_SIZE));
+    VerticalScrollBar.Max := Round(Max(VerticalScrollBar.Max,
+      Round(i.BottomRightBorder.y) + CANVAS_OFFSET_BORDER_SIZE));
+  end;
 end;
 
 procedure TDrawForm.MainPaintBoxResize(Sender: TObject);
@@ -278,6 +332,7 @@ begin
   if IsDrawing then
   begin
     CanvasItems[High(CanvasItems)].MouseMove(X, Y);
+    SetScrollBars;
     MainPaintBox.Invalidate;
   end;
 end;
@@ -300,6 +355,7 @@ begin
       FreeAndNil(UndoHistory[i]);
     SetLength(UndoHistory, 0);
   end;
+  SetScrollBars;
   MainPaintBox.Invalidate;
 end;
 
@@ -314,9 +370,7 @@ begin
     FillRect(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
   for i in CanvasItems do
-  begin
     i.Draw(MainPaintBox.Canvas);
-  end;
 end;
 
 procedure TDrawForm.ChangeLineColorButtonColorChanged(Sender: TObject);

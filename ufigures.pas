@@ -22,9 +22,13 @@ type
     LineStyle: TPenStyle;
     FillStyle: TBrushStyle;
     Button: TMouseButton;
+    function FTopLeft: TDoublePoint;
+    function FBottomRight: TDoublePoint;
     procedure SetCanvasStyles(ACanvas: TCanvas);
   public
     CanBeDestroyed: boolean;
+    property TopLeftBorder: TDoublePoint read FTopLeft;
+    property BottomRightBorder: TDoublePoint read FBottomRight;
     constructor Create(X, Y: double; ALineColor: TColor; ALineWidth: integer;
       AFillColor: TColor; ALineStyle: TPenStyle; AFillStyle: TBrushStyle;
       AButton: TMouseButton);
@@ -41,6 +45,7 @@ type
 
   THand = class(TFigure)
     procedure MouseMove(X, Y: integer); override;
+    procedure MouseUp(X, Y: integer); override;
     procedure Draw(ACanvas: TCanvas); override;
   end;
 
@@ -160,6 +165,12 @@ begin
   CanvasOffset.y := CanvasOffset.y + (Vertexes[0].y - Vertexes[1].y);
 end;
 
+procedure THand.MouseUp(X, Y: integer);
+begin
+  inherited MouseUp(X, Y);
+  CanBeDestroyed := true;
+end;
+
 procedure THand.Draw(ACanvas: TCanvas);
 begin
   //Dummy
@@ -186,6 +197,30 @@ end;
 procedure TFigure.MouseUp(X, Y: integer);
 begin
   //dummy
+end;
+
+function TFigure.FTopLeft: TDoublePoint;
+var
+  i: TDoublePoint;
+begin
+  Result := Vertexes[0];
+  for i in Vertexes do
+  begin
+    Result.x := min(Result.x, i.x);
+    Result.y := min(Result.y, i.y);
+  end;
+end;
+
+function TFigure.FBottomRight: TDoublePoint;
+var
+  i: TDoublePoint;
+begin
+  Result := Vertexes[0];
+  for i in Vertexes do
+  begin
+    Result.x := max(Result.x, i.x);
+    Result.y := max(Result.y, i.y);
+  end;
 end;
 
 procedure TFigure.SetCanvasStyles(ACanvas: TCanvas);
