@@ -45,8 +45,8 @@ function CanvasToWorld(APoint: TPoint): TDoublePoint;
 begin
   with Result do
   begin
-    x := (APoint.x + CanvasOffset.x) / Scale;
-    y := (APoint.y + CanvasOffset.y) / Scale;
+    x := APoint.x / Scale + CanvasOffset.x;
+    y := APoint.y / Scale + CanvasOffset.y;
   end;
 end;
 
@@ -54,8 +54,8 @@ function WorldToCanvas(AX, AY: double): TPoint;
 begin
   with Result do
   begin
-    x := Round(AX * Scale - CanvasOffset.x);
-    y := Round(AY * Scale - CanvasOffset.y);
+    x := Round((AX - CanvasOffset.x) * Scale);
+    y := Round((AY - CanvasOffset.y) * Scale);
   end;
 end;
 
@@ -76,16 +76,13 @@ end;
 
 procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
 var
-  ScreenCorner, ScreenCenter, ScreenBegin, t: TDoublePoint;
+  CanvasCorner, CanvasBegin: TDoublePoint;
 begin
-  //ScreenCenter := CanvasToWorld(Point(CanvasWidth div 2, CanvasHeight div 2));
   SetScale(AScale);
-  ScreenBegin := CanvasToWorld(Point(0,0));
-  ScreenCorner := CanvasToWorld(Point(CanvasWidth, CanvasHeight));
-  t.x := APoint.x;// - (ScreenCorner.x-ScreenBegin.x)/2;
-  t.y := APoint.y;//S - (ScreenCorner.y-ScreenBegin.y)/2;
-  CanvasOffset.x := t.x;
-  CanvasOffset.y := t.y;
+  CanvasBegin := CanvasToWorld(Point(0,0));
+  CanvasCorner := CanvasToWorld(Point(CanvasWidth, CanvasHeight));
+  CanvasOffset.x := APoint.x - (CanvasCorner.x - CanvasBegin.x) / 2;
+  CanvasOffset.y := APoint.y - (CanvasCorner.y - CanvasBegin.y) / 2;
 end;
 
 initialization

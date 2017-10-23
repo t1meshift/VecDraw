@@ -91,20 +91,54 @@ implementation
 
 procedure TMagnifier.MouseMove(X, Y: integer);
 begin
-  //Vertexes[1] := CanvasToWorld(Point(X, Y));
+  Vertexes[1] := CanvasToWorld(Point(X, Y));
 end;
 
 procedure TMagnifier.MouseUp(X, Y: integer);
+const
+  eps = 5;
 var
-  WorldSize: TDoublePoint;
+  CanvasCorner, TopLeft, BottomRight: TDoublePoint;
+  NewScale: double;
 begin
   inherited MouseUp(X, Y);
-  ZoomPoint(CanvasToWorld(Point(X, Y)), Scale*2);
+  TopLeft := DoublePoint(Min(Vertexes[0].x, Vertexes[1].x),
+    Min(Vertexes[0].y, Vertexes[1].y));
+  BottomRight := DoublePoint(Max(Vertexes[0].x, Vertexes[1].x),
+    Max(Vertexes[0].y, Vertexes[1].y));
+  CanvasCorner := CanvasToWorld(Point(CanvasWidth, CanvasHeight));
+
+  if sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < sqr(eps)
+  then
+    ZoomPoint(CanvasToWorld(Point(X, Y)), Scale*2)
+  else
+  begin
+    NewScale := Min((CanvasWidth / Scale) / (BottomRight.x - TopLeft.x),
+      (CanvasHeight / Scale) / (BottomRight.y - TopLeft.y));
+    ZoomPoint(DoublePoint((TopLeft.x + BottomRight.x) / 2,
+      (TopLeft.x + BottomRight.x) / 2), NewScale);
+  end;
+
+  Vertexes[0] := DoublePoint(0,0);
+  Vertexes[1] := Vertexes[0];
 end;
 
 procedure TMagnifier.Draw(ACanvas: TCanvas);
+var
+  TopLeft, BottomRight: TPoint;
 begin
-  //Dummy
+  TopLeft := WorldToCanvas(Vertexes[0]);
+  BottomRight := WorldToCanvas(Vertexes[1]);
+  with ACanvas do
+  begin
+    Pen.Style := psDash;
+    Pen.Width := 1;
+    Pen.Color := clBlack;
+    Pen.Mode := pmNot;
+    Brush.Style := bsClear;
+    Rectangle(TopLeft.x, TopLeft.y, BottomRight.x, BottomRight.y);
+    Pen.Mode := pmCopy;
+  end;
 end;
 
 { THand }
