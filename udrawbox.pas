@@ -262,16 +262,13 @@ procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
 var
   WorldStartPoint: TDoublePoint;
 begin
-  if Button = mbLeft then
-  begin
-    IsDrawing := true;
-    SetLength(CanvasItems, Length(CanvasItems) + 1);
-    WorldStartPoint := CanvasToWorld(Point(X, Y));
-    CanvasItems[High(CanvasItems)] := CurrentFigure.Create(WorldStartPoint.x,
-      WorldStartPoint.y, CurrentLineColor, CurrentLineWidth, CurrentFillColor,
-      LINE_STYLES[CurrentLineStyle].PenStyle,
-      FILL_STYLES[CurrentFillStyle].BrushStyle);
-  end;
+  IsDrawing := true;
+  SetLength(CanvasItems, Length(CanvasItems) + 1);
+  WorldStartPoint := CanvasToWorld(Point(X, Y));
+  CanvasItems[High(CanvasItems)] := CurrentFigure.Create(WorldStartPoint.x,
+    WorldStartPoint.y, CurrentLineColor, CurrentLineWidth, CurrentFillColor,
+    LINE_STYLES[CurrentLineStyle].PenStyle,
+    FILL_STYLES[CurrentFillStyle].BrushStyle, Button);
   MainPaintBox.Invalidate;
 end;
 
@@ -290,15 +287,20 @@ procedure TDrawForm.MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
 var
   i: integer;
 begin
-  if Button = mbLeft then
+  IsDrawing := false;
+  CanvasItems[High(CanvasItems)].MouseUp(X, Y);
+  if CanvasItems[High(CanvasItems)].CanBeDestroyed then
   begin
-    IsDrawing := false;
-    CanvasItems[High(CanvasItems)].MouseUp(X, Y);
-    MainPaintBox.Invalidate;
+    FreeAndNil(CanvasItems[High(CanvasItems)]);
+    SetLength(CanvasItems, Length(CanvasItems) - 1);
+  end
+  else
+  begin
     for i := Low(UndoHistory) to High(UndoHistory) do
       FreeAndNil(UndoHistory[i]);
     SetLength(UndoHistory, 0);
   end;
+  MainPaintBox.Invalidate;
 end;
 
 procedure TDrawForm.MainPaintBoxPaint(Sender: TObject);
@@ -311,8 +313,10 @@ begin
     Brush.Color := clWhite;
     FillRect(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
-    for i in CanvasItems do
-      i.Draw(MainPaintBox.Canvas);
+  for i in CanvasItems do
+  begin
+    i.Draw(MainPaintBox.Canvas);
+  end;
 end;
 
 procedure TDrawForm.ChangeLineColorButtonColorChanged(Sender: TObject);

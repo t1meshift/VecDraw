@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 347
+  Left = 195
   Height = 639
-  Top = 128
+  Top = 44
   Width = 1024
   Caption = 'DrawForm'
   ClientHeight = 619

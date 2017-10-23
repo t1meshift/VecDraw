@@ -5,7 +5,7 @@ unit UFigures;
 interface
 
 uses
-  Classes, SysUtils, Graphics, UTransform, Math;
+  Classes, SysUtils, Graphics, UTransform, Math, Controls;
 
 type
 
@@ -21,10 +21,13 @@ type
     LineWidth: integer;
     LineStyle: TPenStyle;
     FillStyle: TBrushStyle;
+    Button: TMouseButton;
     procedure SetCanvasStyles(ACanvas: TCanvas);
   public
+    CanBeDestroyed: boolean;
     constructor Create(X, Y: double; ALineColor: TColor; ALineWidth: integer;
-      AFillColor: TColor; ALineStyle: TPenStyle; AFillStyle: TBrushStyle);
+      AFillColor: TColor; ALineStyle: TPenStyle; AFillStyle: TBrushStyle;
+      AButton: TMouseButton);
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
     procedure MouseMove(X, Y: integer); virtual; abstract;
     procedure MouseUp(X, Y: integer); virtual;
@@ -96,31 +99,38 @@ end;
 
 procedure TMagnifier.MouseUp(X, Y: integer);
 const
-  eps = 5;
+  eps = 10;
 var
-  CanvasCorner, TopLeft, BottomRight: TDoublePoint;
+  TopLeft, BottomRight: TDoublePoint;
   NewScale: double;
 begin
   inherited MouseUp(X, Y);
+
   TopLeft := DoublePoint(Min(Vertexes[0].x, Vertexes[1].x),
     Min(Vertexes[0].y, Vertexes[1].y));
+
   BottomRight := DoublePoint(Max(Vertexes[0].x, Vertexes[1].x),
     Max(Vertexes[0].y, Vertexes[1].y));
-  CanvasCorner := CanvasToWorld(Point(CanvasWidth, CanvasHeight));
 
   if sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < sqr(eps)
   then
-    ZoomPoint(CanvasToWorld(Point(X, Y)), Scale*2)
+  begin
+    case Button of
+      mbLeft: ZoomPoint(CanvasToWorld(Point(X, Y)), Scale*2);
+      mbRight: ZoomPoint(CanvasToWorld(Point(X, Y)), Scale/2);
+    end;
+  end
   else
   begin
-    NewScale := Min((CanvasWidth / Scale) / (BottomRight.x - TopLeft.x),
+    NewScale := Scale * Max((CanvasWidth / Scale) / (BottomRight.x - TopLeft.x),
       (CanvasHeight / Scale) / (BottomRight.y - TopLeft.y));
     ZoomPoint(DoublePoint((TopLeft.x + BottomRight.x) / 2,
-      (TopLeft.x + BottomRight.x) / 2), NewScale);
+      (TopLeft.y + BottomRight.y) / 2), NewScale);
   end;
 
   Vertexes[0] := DoublePoint(0,0);
   Vertexes[1] := Vertexes[0];
+  CanBeDestroyed := true;
 end;
 
 procedure TMagnifier.Draw(ACanvas: TCanvas);
@@ -159,7 +169,7 @@ end;
 
 constructor TFigure.Create(X, Y: double;
   ALineColor: TColor; ALineWidth: integer; AFillColor: TColor;
-  ALineStyle: TPenStyle; AFillStyle: TBrushStyle);
+  ALineStyle: TPenStyle; AFillStyle: TBrushStyle; AButton: TMouseButton);
 begin
   SetLength(Vertexes, 2);
   Vertexes[0] := DoublePoint(X, Y);
@@ -169,6 +179,8 @@ begin
   LineStyle := ALineStyle;
   FillColor := AFillColor;
   FillStyle := AFillStyle;
+  Button := AButton;
+  CanBeDestroyed := false;
 end;
 
 procedure TFigure.MouseUp(X, Y: integer);
@@ -204,15 +216,23 @@ end;
 
 procedure TPolyLine.MouseMove(X, Y: integer);
 begin
-  SetLength(Vertexes, Length(Vertexes) + 1);
-  Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
+  if Button = mbLeft then
+  begin
+    SetLength(Vertexes, Length(Vertexes) + 1);
+    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
+  end
+  else
+    CanBeDestroyed := true;
 end;
 
 { TLine }
 
 procedure TLine.MouseMove(X, Y: integer);
 begin
-  Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
+  if Button = mbLeft then
+    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
+  else
+    CanBeDestroyed := true;
 end;
 
 { TRectangle }
@@ -230,7 +250,10 @@ end;
 
 procedure TRectangle.MouseMove(X, Y: integer);
 begin
-  Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
+  if Button = mbLeft then
+    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
+  else
+    CanBeDestroyed := true;
 end;
 
 { TEllipse }
@@ -248,7 +271,10 @@ end;
 
 procedure TEllipse.MouseMove(X, Y: integer);
 begin
-  Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
+  if Button = mbLeft then
+    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
+  else
+    CanBeDestroyed := true;
 end;
 
 procedure RegisterFigures(AFigures: TFigureClassList);
