@@ -302,8 +302,11 @@ begin
 end;
 
 procedure TDrawForm.ScaleFloatSpinChange(Sender: TObject);
+var
+  CanvasCenter: TDoublePoint;
 begin
-  SetScale(ScaleFloatSpin.Value / 100);
+  CanvasCenter := CanvasToWorld(Point(CanvasWidth div 2, CanvasHeight div 2));
+  ZoomPoint(CanvasCenter, ScaleFloatSpin.Value / 100);
   MainPaintBox.Invalidate;
 end;
 
