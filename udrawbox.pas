@@ -265,6 +265,7 @@ procedure TDrawForm.SetScrollBars;
 var
   i: TFigure;
   HorMin, HorMax, VerMin, VerMax: integer;
+  CanvasCorner: TDoublePoint;
 begin
   HorMin := Round(Min(CanvasOffset.x - CANVAS_OFFSET_BORDER_SIZE,
     -CANVAS_OFFSET_BORDER_SIZE));
@@ -277,15 +278,18 @@ begin
 
   if Length(CanvasItems) > 0 then
   begin
+    CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
     i := CanvasItems[High(CanvasItems)];
     HorMin := Round(Min(HorizontalScrollBar.Min,
       i.TopLeftBorder.x - CANVAS_OFFSET_BORDER_SIZE));
     HorMax := Round(Max(HorizontalScrollBar.Max,
-      i.BottomRightBorder.x + CANVAS_OFFSET_BORDER_SIZE));
+      CanvasOffset.x + i.BottomRightBorder.x - CanvasCorner.x
+      + CANVAS_OFFSET_BORDER_SIZE));
     VerMin := Round(Min(VerticalScrollBar.Min,
       i.TopLeftBorder.y - CANVAS_OFFSET_BORDER_SIZE));
     VerMax := Round(Max(VerticalScrollBar.Max,
-      i.BottomRightBorder.y + CANVAS_OFFSET_BORDER_SIZE));
+      CanvasOffset.y + i.BottomRightBorder.y - CanvasCorner.y
+      + CANVAS_OFFSET_BORDER_SIZE));
   end;
   HorizontalScrollBar.Min := HorMin;
   HorizontalScrollBar.Max := HorMax;
@@ -305,7 +309,7 @@ procedure TDrawForm.ScaleFloatSpinChange(Sender: TObject);
 var
   CanvasCenter: TDoublePoint;
 begin
-  CanvasCenter := CanvasToWorld(Point(CanvasWidth div 2, CanvasHeight div 2));
+  CanvasCenter := CanvasToWorld(CanvasWidth div 2, CanvasHeight div 2);
   ZoomPoint(CanvasCenter, ScaleFloatSpin.Value / 100);
   MainPaintBox.Invalidate;
 end;
@@ -313,10 +317,14 @@ end;
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
 var
   b: TSpeedButton;
+  i: integer;
 begin
   b := Sender as TSpeedButton;
   CurrentFigure := FiguresBase[b.Tag];
   CurrentToolImage.Picture.Bitmap := b.Glyph;
+  for i := 0 to ToolsPanel.ControlCount-1 do
+    (ToolsPanel.Controls[i] as TSpeedButton).Enabled := true;
+  b.Enabled := false;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
@@ -326,7 +334,7 @@ var
 begin
   IsDrawing := true;
   SetLength(CanvasItems, Length(CanvasItems) + 1);
-  WorldStartPoint := CanvasToWorld(Point(X, Y));
+  WorldStartPoint := CanvasToWorld(X, Y);
   CanvasItems[High(CanvasItems)] := CurrentFigure.Create(WorldStartPoint.x,
     WorldStartPoint.y, CurrentLineColor, CurrentLineWidth, CurrentFillColor,
     LINE_STYLES[CurrentLineStyle].PenStyle,
@@ -438,6 +446,7 @@ begin
   for i := Low(CanvasItems) to High(CanvasItems) do
     FreeAndNil(CanvasItems[i]);
   SetLength(CanvasItems, 0);
+  SetScrollBars;
   MainPaintBox.Invalidate;
 end;
 

@@ -134,8 +134,8 @@ begin
       (TopLeft.y + BottomRight.y) / 2), NewScale);
   end;
 
-  Vertexes[0] := DoublePoint(0,0);
-  Vertexes[1] := Vertexes[0];
+  {Vertexes[0] := DoublePoint(0,0);
+  Vertexes[1] := Vertexes[0];}
   FCanBeDestroyed := true;
 end;
 
@@ -161,7 +161,7 @@ end;
 
 procedure THand.MouseMove(X, Y: integer);
 begin
-  Vertexes[1] := CanvasToWorld(Point(X, Y));
+  Vertexes[1] := CanvasToWorld(X, Y);
   CanvasOffset.x := CanvasOffset.x + (Vertexes[0].x - Vertexes[1].x);
   CanvasOffset.y := CanvasOffset.y + (Vertexes[0].y - Vertexes[1].y);
 end;
@@ -255,7 +255,7 @@ begin
   if Button = mbLeft then
   begin
     SetLength(Vertexes, Length(Vertexes) + 1);
-    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y));
+    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
   end
   else
     FCanBeDestroyed := true;
@@ -266,7 +266,7 @@ end;
 procedure TLine.MouseMove(X, Y: integer);
 begin
   if Button = mbLeft then
-    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
+    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
   else
     FCanBeDestroyed := true;
 end;
@@ -287,7 +287,7 @@ end;
 procedure TRectangle.MouseMove(X, Y: integer);
 begin
   if Button = mbLeft then
-    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
+    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
   else
     FCanBeDestroyed := true;
 end;
@@ -308,7 +308,7 @@ end;
 procedure TEllipse.MouseMove(X, Y: integer);
 begin
   if Button = mbLeft then
-    Vertexes[High(Vertexes)] := CanvasToWorld(Point(X, Y))
+    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
   else
     FCanBeDestroyed := true;
 end;

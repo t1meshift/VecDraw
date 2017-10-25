@@ -14,6 +14,7 @@ type
 
 function DoublePoint(AX, AY: double): TDoublePoint;
 
+function CanvasToWorld(AX, AY: integer): TDoublePoint;
 function CanvasToWorld(APoint: TPoint): TDoublePoint;
 function WorldToCanvas(AX, AY: double): TPoint;
 function WorldToCanvas(ADoublePoint: TDoublePoint): TPoint;
@@ -39,6 +40,11 @@ begin
     x := AX;
     y := AY;
   end;
+end;
+
+function CanvasToWorld(AX, AY: integer): TDoublePoint;
+begin
+  Result := CanvasToWorld(Point(AX,AY));
 end;
 
 function CanvasToWorld(APoint: TPoint): TDoublePoint;
@@ -76,13 +82,12 @@ end;
 
 procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
 var
-  CanvasCorner, CanvasBegin: TDoublePoint;
+  CanvasCorner: TDoublePoint;
 begin
   SetScale(AScale);
-  CanvasBegin := CanvasToWorld(Point(0,0));
-  CanvasCorner := CanvasToWorld(Point(CanvasWidth, CanvasHeight));
-  CanvasOffset.x := APoint.x - (CanvasCorner.x - CanvasBegin.x) / 2;
-  CanvasOffset.y := APoint.y - (CanvasCorner.y - CanvasBegin.y) / 2;
+  CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
+  CanvasOffset.x := APoint.x - (CanvasCorner.x - CanvasOffset.x) / 2;
+  CanvasOffset.y := APoint.y - (CanvasCorner.y - CanvasOffset.y) / 2;
 end;
 
 initialization
