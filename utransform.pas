@@ -24,7 +24,7 @@ procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
 
 const
   ZOOM_MIN = 0.01;
-  ZOOM_MAX = 16.00;
+  ZOOM_MAX = 32.00;
 
 var
   Scale: double;
@@ -44,16 +44,16 @@ end;
 
 function CanvasToWorld(AX, AY: integer): TDoublePoint;
 begin
-  Result := CanvasToWorld(Point(AX,AY));
+  with Result do
+  begin
+    x := AX / Scale + CanvasOffset.x;
+    y := AY / Scale + CanvasOffset.y;
+  end;
 end;
 
 function CanvasToWorld(APoint: TPoint): TDoublePoint;
 begin
-  with Result do
-  begin
-    x := APoint.x / Scale + CanvasOffset.x;
-    y := APoint.y / Scale + CanvasOffset.y;
-  end;
+    Result := CanvasToWorld(APoint.x, APoint.y);
 end;
 
 function WorldToCanvas(AX, AY: double): TPoint;
@@ -82,9 +82,14 @@ end;
 
 procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
 var
+  PrevScale: double;
   CanvasCorner: TDoublePoint;
 begin
+  PrevScale := Scale;
   SetScale(AScale);
+  if Scale = PrevScale then
+    exit;
+
   CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
   CanvasOffset.x := APoint.x - (CanvasCorner.x - CanvasOffset.x) / 2;
   CanvasOffset.y := APoint.y - (CanvasCorner.y - CanvasOffset.y) / 2;

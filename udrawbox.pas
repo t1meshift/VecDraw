@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
-  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UTransform;
+  ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UFigures, UTransform, Types;
 
 type
 
@@ -18,7 +18,6 @@ type
     ChangeLineStyleComboBox: TComboBox;
     FillColorLabel: TLabel;
     FillStyleLabel: TLabel;
-    CurrentToolImage: TImage;
     ScaleFloatSpin: TFloatSpinEdit;
     ScaleLabel: TLabel;
     LineStyleLabel: TLabel;
@@ -50,6 +49,8 @@ type
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure HorizontalScrollBarChange(Sender: TObject);
+    procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure VerticalScrollBarChange(Sender: TObject);
     procedure SetScrollBars;
     procedure MainPaintBoxResize(Sender: TObject);
@@ -97,67 +98,24 @@ const
   CANVAS_OFFSET_BORDER_SIZE: integer = 10;
   LINE_STYLES: array[0..5] of TLineStyleItem =
     (
-      (
-        Name: 'Solid';
-        PenStyle: psSolid
-      ),
-      (
-        Name: 'No line';
-        PenStyle: psClear
-      ),
-      (
-        Name: 'Dots';
-        PenStyle: psDot
-      ),
-      (
-        Name: 'Dashes';
-        PenStyle: psDash
-      ),
-      (
-        Name: 'Dash dots';
-        PenStyle: psDashDot
-      ),
-      (
-        Name: 'Dash dot dots';
-        PenStyle: psDashDotDot
-      )
+      (Name: 'Solid';         PenStyle: psSolid),
+      (Name: 'No line';       PenStyle: psClear),
+      (Name: 'Dots';          PenStyle: psDot),
+      (Name: 'Dashes';        PenStyle: psDash),
+      (Name: 'Dash dots';     PenStyle: psDashDot),
+      (Name: 'Dash dot dots'; PenStyle: psDashDotDot)
     );
   FILL_STYLES: array[0..7] of TFillStyleItem =
     (
-      (
-        Name: 'Solid';
-        BrushStyle: bsSolid
-      ),
-      (
-        Name: 'Hollow';
-        BrushStyle: bsClear
-      ),
-      (
-        Name: 'Horizontal stripes';
-        BrushStyle: bsHorizontal
-      ),
-      (
-        Name: 'Vertical stripes' ;
-        BrushStyle: bsVertical
-      ),
-      (
-        Name: 'Left diagonal';
-        BrushStyle: bsFDiagonal
-      ),
-      (
-        Name: 'Right diagonal';
-        BrushStyle: bsBDiagonal
-      ),
-      (
-        Name: 'Cross';
-        BrushStyle: bsCross
-      ),
-      (
-        Name: 'Diagonal cross';
-        BrushStyle: bsDiagCross
-      )
+      (Name: 'Solid';              BrushStyle: bsSolid),
+      (Name: 'Hollow';             BrushStyle: bsClear),
+      (Name: 'Horizontal stripes'; BrushStyle: bsHorizontal),
+      (Name: 'Vertical stripes';   BrushStyle: bsVertical),
+      (Name: 'Left diagonal';      BrushStyle: bsFDiagonal),
+      (Name: 'Right diagonal';     BrushStyle: bsBDiagonal),
+      (Name: 'Cross';              BrushStyle: bsCross),
+      (Name: 'Diagonal cross';     BrushStyle: bsDiagCross)
     );
-
 
 var
   DrawForm: TDrawForm;
@@ -249,6 +207,17 @@ begin
   CanvasHeight := MainPaintBox.Height;
 end;
 
+procedure TDrawForm.MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+begin
+  if WheelDelta > 0 then
+    ZoomPoint(CanvasToWorld(MousePos), Scale*2)
+  else
+    ZoomPoint(CanvasToWorld(MousePos), Scale/2);
+  SetScrollBars;
+  MainPaintBox.Invalidate;
+end;
+
 procedure TDrawForm.HorizontalScrollBarChange(Sender: TObject);
 begin
   CanvasOffset.x := HorizontalScrollBar.Position;
@@ -276,27 +245,21 @@ begin
   VerMax := Round(Max(CanvasOffset.y + CANVAS_OFFSET_BORDER_SIZE,
     CANVAS_OFFSET_BORDER_SIZE));
 
-  if Length(CanvasItems) > 0 then
+  CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
+  for i in CanvasItems do
   begin
-    CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
-    i := CanvasItems[High(CanvasItems)];
-    HorMin := Round(Min(HorizontalScrollBar.Min,
-      i.TopLeftBorder.x - CANVAS_OFFSET_BORDER_SIZE));
-    HorMax := Round(Max(HorizontalScrollBar.Max,
-      CanvasOffset.x + i.BottomRightBorder.x - CanvasCorner.x
-      + CANVAS_OFFSET_BORDER_SIZE));
-    VerMin := Round(Min(VerticalScrollBar.Min,
-      i.TopLeftBorder.y - CANVAS_OFFSET_BORDER_SIZE));
-    VerMax := Round(Max(VerticalScrollBar.Max,
-      CanvasOffset.y + i.BottomRightBorder.y - CanvasCorner.y
-      + CANVAS_OFFSET_BORDER_SIZE));
+    HorMin := Min(HorMin, Round(i.TopLeftBorder.x - CANVAS_OFFSET_BORDER_SIZE));
+    HorMax := Max(HorMax, Round(CanvasOffset.x + i.BottomRightBorder.x
+      - CanvasCorner.x + CANVAS_OFFSET_BORDER_SIZE));
+    VerMin := Min(VerMin, Round(i.TopLeftBorder.y - CANVAS_OFFSET_BORDER_SIZE));
+    VerMax := Max(VerMax, Round(CanvasOffset.y + i.BottomRightBorder.y
+      - CanvasCorner.y + CANVAS_OFFSET_BORDER_SIZE));
   end;
+
   HorizontalScrollBar.Min := HorMin;
   HorizontalScrollBar.Max := HorMax;
   VerticalScrollBar.Min := VerMin;
   VerticalScrollBar.Max := VerMax;
-  HorizontalScrollBar.Position := Round(CanvasOffset.x);
-  VerticalScrollBar.Position := Round(CanvasOffset.y);
 end;
 
 procedure TDrawForm.MainPaintBoxResize(Sender: TObject);
@@ -311,6 +274,7 @@ var
 begin
   CanvasCenter := CanvasToWorld(CanvasWidth div 2, CanvasHeight div 2);
   ZoomPoint(CanvasCenter, ScaleFloatSpin.Value / 100);
+  SetScrollBars;
   MainPaintBox.Invalidate;
 end;
 
@@ -321,7 +285,6 @@ var
 begin
   b := Sender as TSpeedButton;
   CurrentFigure := FiguresBase[b.Tag];
-  CurrentToolImage.Picture.Bitmap := b.Glyph;
   for i := 0 to ToolsPanel.ControlCount-1 do
     (ToolsPanel.Controls[i] as TSpeedButton).Enabled := true;
   b.Enabled := false;
@@ -348,6 +311,12 @@ begin
   if IsDrawing then
   begin
     CanvasItems[High(CanvasItems)].MouseMove(X, Y);
+    if CanvasItems[High(CanvasItems)].CanBeDestroyed then
+    begin
+      FreeAndNil(CanvasItems[High(CanvasItems)]);
+      SetLength(CanvasItems, Length(CanvasItems) - 1);
+      IsDrawing := false;
+    end;
     SetScrollBars;
     MainPaintBox.Invalidate;
   end;

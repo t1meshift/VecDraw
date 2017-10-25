@@ -33,6 +33,7 @@ object DrawForm: TDrawForm
     OnMouseDown = MainPaintBoxMouseDown
     OnMouseMove = MainPaintBoxMouseMove
     OnMouseUp = MainPaintBoxMouseUp
+    OnMouseWheel = MainPaintBoxMouseWheel
     OnPaint = MainPaintBoxPaint
     OnResize = MainPaintBoxResize
   end
@@ -207,17 +208,6 @@ object DrawForm: TDrawForm
     Anchors = [akTop, akLeft, akRight]
     Caption = 'Scale:'
     ParentColor = False
-  end
-  object CurrentToolImage: TImage
-    AnchorSideLeft.Control = HorizontalScrollBar
-    AnchorSideLeft.Side = asrBottom
-    AnchorSideTop.Control = VerticalScrollBar
-    AnchorSideTop.Side = asrBottom
-    Left = 992
-    Height = 32
-    Top = 584
-    Width = 32
-    Anchors = [akTop, akLeft, akRight, akBottom]
   end
   object MainMenu: TMainMenu
     left = 232

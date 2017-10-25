@@ -96,87 +96,6 @@ var
 
 implementation
 
-{ TMagnifier }
-
-procedure TMagnifier.MouseMove(X, Y: integer);
-begin
-  Vertexes[1] := CanvasToWorld(Point(X, Y));
-end;
-
-procedure TMagnifier.MouseUp(X, Y: integer);
-const
-  eps = 10;
-var
-  TopLeft, BottomRight: TDoublePoint;
-  NewScale: double;
-begin
-  inherited MouseUp(X, Y);
-
-  TopLeft := DoublePoint(Min(Vertexes[0].x, Vertexes[1].x),
-    Min(Vertexes[0].y, Vertexes[1].y));
-
-  BottomRight := DoublePoint(Max(Vertexes[0].x, Vertexes[1].x),
-    Max(Vertexes[0].y, Vertexes[1].y));
-
-  if sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < sqr(eps)
-  then
-  begin
-    case Button of
-      mbLeft: ZoomPoint(CanvasToWorld(Point(X, Y)), Scale*2);
-      mbRight: ZoomPoint(CanvasToWorld(Point(X, Y)), Scale/2);
-    end;
-  end
-  else
-  begin
-    NewScale := Scale * Max((CanvasWidth / Scale) / (BottomRight.x - TopLeft.x),
-      (CanvasHeight / Scale) / (BottomRight.y - TopLeft.y));
-    ZoomPoint(DoublePoint((TopLeft.x + BottomRight.x) / 2,
-      (TopLeft.y + BottomRight.y) / 2), NewScale);
-  end;
-
-  {Vertexes[0] := DoublePoint(0,0);
-  Vertexes[1] := Vertexes[0];}
-  FCanBeDestroyed := true;
-end;
-
-procedure TMagnifier.Draw(ACanvas: TCanvas);
-var
-  TopLeft, BottomRight: TPoint;
-begin
-  TopLeft := WorldToCanvas(Vertexes[0]);
-  BottomRight := WorldToCanvas(Vertexes[1]);
-  with ACanvas do
-  begin
-    Pen.Style := psDash;
-    Pen.Width := 1;
-    Pen.Color := clBlack;
-    Pen.Mode := pmNot;
-    Brush.Style := bsClear;
-    Rectangle(TopLeft.x, TopLeft.y, BottomRight.x, BottomRight.y);
-    Pen.Mode := pmCopy;
-  end;
-end;
-
-{ THand }
-
-procedure THand.MouseMove(X, Y: integer);
-begin
-  Vertexes[1] := CanvasToWorld(X, Y);
-  CanvasOffset.x := CanvasOffset.x + (Vertexes[0].x - Vertexes[1].x);
-  CanvasOffset.y := CanvasOffset.y + (Vertexes[0].y - Vertexes[1].y);
-end;
-
-procedure THand.MouseUp(X, Y: integer);
-begin
-  inherited MouseUp(X, Y);
-  FCanBeDestroyed := true;
-end;
-
-procedure THand.Draw(ACanvas: TCanvas);
-begin
-  //Dummy
-end;
-
 { TFigure }
 
 constructor TFigure.Create(X, Y: double;
@@ -233,6 +152,91 @@ begin
     Pen.Style := LineStyle;
     Brush.Color := FillColor;
     Brush.Style := FillStyle;
+  end;
+end;
+
+{ THand }
+
+procedure THand.MouseMove(X, Y: integer);
+begin
+  Vertexes[1] := CanvasToWorld(X, Y);
+  CanvasOffset.x := CanvasOffset.x + Vertexes[0].x - Vertexes[1].x;
+  CanvasOffset.y := CanvasOffset.y + Vertexes[0].y - Vertexes[1].y;
+end;
+
+procedure THand.MouseUp(X, Y: integer);
+begin
+  inherited MouseUp(X, Y);
+  FCanBeDestroyed := true;
+end;
+
+procedure THand.Draw(ACanvas: TCanvas);
+begin
+  //dummy
+end;
+
+
+{ TMagnifier }
+
+procedure TMagnifier.MouseMove(X, Y: integer);
+begin
+  if Button = mbLeft then
+    Vertexes[1] := CanvasToWorld(X, Y)
+  else
+    FCanBeDestroyed := true;
+end;
+
+procedure TMagnifier.MouseUp(X, Y: integer);
+const
+  eps = 16;
+var
+  TopLeft, BottomRight: TDoublePoint;
+  NewScale: double;
+begin
+  inherited MouseUp(X, Y);
+
+  TopLeft := DoublePoint(Min(Vertexes[0].x, Vertexes[1].x),
+    Min(Vertexes[0].y, Vertexes[1].y));
+
+  BottomRight := DoublePoint(Max(Vertexes[0].x, Vertexes[1].x),
+    Max(Vertexes[0].y, Vertexes[1].y));
+
+  if (sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < eps*eps)
+  then
+  begin
+    case Button of
+      mbLeft: ZoomPoint(CanvasToWorld(X, Y), Scale*2);
+      mbRight: ZoomPoint(CanvasToWorld(X, Y), Scale/2);
+    end;
+  end
+  else
+  begin
+    if (TopLeft.x <> BottomRight.x) and (TopLeft.y <> BottomRight.y) then
+    begin
+      NewScale := Scale*Max(CanvasWidth / Scale / (BottomRight.x - TopLeft.x),
+        CanvasHeight / Scale / (BottomRight.y - TopLeft.y));
+      ZoomPoint(DoublePoint((TopLeft.x + BottomRight.x) / 2,
+        (TopLeft.y + BottomRight.y) / 2), NewScale);
+    end;
+  end;
+  FCanBeDestroyed := true;
+end;
+
+procedure TMagnifier.Draw(ACanvas: TCanvas);
+var
+  TopLeft, BottomRight: TPoint;
+begin
+  TopLeft := WorldToCanvas(Vertexes[0]);
+  BottomRight := WorldToCanvas(Vertexes[1]);
+  with ACanvas do
+  begin
+    Pen.Style := psDash;
+    Pen.Width := 1;
+    Pen.Color := clBlack;
+    Pen.Mode := pmNot;
+    Brush.Style := bsClear;
+    Rectangle(TopLeft.x, TopLeft.y, BottomRight.x, BottomRight.y);
+    Pen.Mode := pmCopy;
   end;
 end;
 
@@ -333,7 +337,6 @@ RegisterFigures(TFigureClassList.Create(
   TLine,
   TRectangle,
   TEllipse
-  //and so on...
 ));
 
 end.
