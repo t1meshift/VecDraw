@@ -1,7 +1,7 @@
 object AboutForm: TAboutForm
-  Left = 412
+  Left = 407
   Height = 501
-  Top = 166
+  Top = 87
   Width = 515
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog

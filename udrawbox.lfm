@@ -1,34 +1,21 @@
 object DrawForm: TDrawForm
-  Left = 207
+  Left = 309
   Height = 639
   Top = 50
-  Width = 1024
+  Width = 1007
   Caption = 'DrawForm'
   ClientHeight = 619
-  ClientWidth = 1024
+  ClientWidth = 1007
   Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
   Position = poDesktopCenter
   LCLVersion = '1.6.2.0'
-  object ChangeLineColorButton: TColorButton
-    AnchorSideRight.Control = MainPaintBox
-    Left = 1
-    Height = 25
-    Top = 431
-    Width = 143
-    Anchors = [akLeft, akRight, akBottom]
-    BorderWidth = 2
-    ButtonColorSize = 16
-    ButtonColor = clBlack
-    ColorDialog = DrawColorDialog
-    OnColorChanged = ChangeLineColorButtonColorChanged
-  end
   object MainPaintBox: TPaintBox
-    Left = 144
+    Left = 120
     Height = 584
     Top = 0
-    Width = 848
+    Width = 855
     Anchors = [akTop, akLeft, akRight, akBottom]
     OnMouseDown = MainPaintBoxMouseDown
     OnMouseMove = MainPaintBoxMouseMove
@@ -37,113 +24,17 @@ object DrawForm: TDrawForm
     OnPaint = MainPaintBoxPaint
     OnResize = MainPaintBoxResize
   end
-  object PenWidthSpinEdit: TSpinEdit
-    AnchorSideRight.Control = MainPaintBox
-    Left = 1
-    Height = 23
-    Top = 594
-    Width = 143
-    Anchors = [akLeft, akRight, akBottom]
-    MinValue = 1
-    OnChange = PenWidthSpinEditChange
-    TabOrder = 0
-    Value = 1
-  end
-  object LineColorLabel: TLabel
-    AnchorSideRight.Control = MainPaintBox
-    Left = 2
-    Height = 15
-    Top = 415
-    Width = 142
-    Anchors = [akLeft, akRight, akBottom]
-    Caption = 'Line color:'
-    ParentColor = False
-  end
-  object LineWidthLabel: TLabel
-    AnchorSideRight.Control = MainPaintBox
-    Left = 1
-    Height = 15
-    Top = 578
-    Width = 143
-    Anchors = [akLeft, akRight, akBottom]
-    Caption = 'Line width:'
-    ParentColor = False
-  end
   object ToolsPanel: TPanel
     AnchorSideRight.Control = MainPaintBox
     Left = 1
-    Height = 200
+    Height = 0
     Top = 0
-    Width = 143
+    Width = 117
     Anchors = [akTop, akLeft, akRight]
-    TabOrder = 1
-  end
-  object ChangeFillColorButton: TColorButton
-    AnchorSideRight.Control = MainPaintBox
-    Left = 0
-    Height = 25
-    Top = 510
-    Width = 144
-    Anchors = [akLeft, akRight, akBottom]
-    BorderWidth = 2
-    ButtonColorSize = 16
-    ButtonColor = clBlack
-    ColorDialog = DrawColorDialog
-    OnColorChanged = ChangeFillColorButtonColorChanged
-  end
-  object FillColorLabel: TLabel
-    AnchorSideRight.Control = MainPaintBox
-    Left = 2
-    Height = 15
-    Top = 494
-    Width = 142
-    Anchors = [akLeft, akRight, akBottom]
-    Caption = 'Fill color:'
-    ParentColor = False
-  end
-  object ChangeFillStyleComboBox: TComboBox
-    AnchorSideRight.Control = MainPaintBox
-    Left = 2
-    Height = 23
-    Top = 553
-    Width = 142
-    Anchors = [akLeft, akRight, akBottom]
-    ItemHeight = 15
-    OnChange = ChangeFillStyleComboBoxChange
-    Style = csDropDownList
-    TabOrder = 2
-  end
-  object FillStyleLabel: TLabel
-    AnchorSideRight.Control = MainPaintBox
-    Left = 2
-    Height = 15
-    Top = 537
-    Width = 142
-    Anchors = [akLeft, akRight, akBottom]
-    Caption = 'Fill style:'
-    ParentColor = False
-  end
-  object LineStyleLabel: TLabel
-    AnchorSideRight.Control = MainPaintBox
-    Left = 1
-    Height = 15
-    Top = 455
-    Width = 143
-    Anchors = [akLeft, akRight, akBottom]
-    Caption = 'Line style:'
-    ParentColor = False
-  end
-  object ChangeLineStyleComboBox: TComboBox
-    AnchorSideRight.Control = MainPaintBox
-    Left = 2
-    Height = 23
-    Top = 471
-    Width = 142
-    Anchors = [akLeft, akRight, akBottom]
-    ItemHeight = 15
-    OnChange = ChangeLineStyleComboBoxChange
-    Style = csDropDownList
-    TabOrder = 3
+    AutoSize = True
+    BorderSpacing.Left = 2
+    BorderSpacing.Right = 2
+    TabOrder = 0
   end
   object HorizontalScrollBar: TScrollBar
     AnchorSideLeft.Control = MainPaintBox
@@ -153,14 +44,14 @@ object DrawForm: TDrawForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 144
+    Left = 120
     Height = 35
     Top = 584
-    Width = 848
+    Width = 855
     Anchors = [akTop, akLeft, akRight, akBottom]
     PageSize = 0
-    TabOrder = 4
-    OnChange = HorizontalScrollBarChange
+    TabOrder = 1
+    OnChange = ScrollBarChange
   end
   object VerticalScrollBar: TScrollBar
     AnchorSideLeft.Control = MainPaintBox
@@ -170,44 +61,219 @@ object DrawForm: TDrawForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = MainPaintBox
     AnchorSideBottom.Side = asrBottom
-    Left = 992
+    Left = 975
     Height = 584
     Top = 0
     Width = 32
     Anchors = [akTop, akLeft, akRight, akBottom]
     Kind = sbVertical
     PageSize = 0
-    TabOrder = 5
-    OnChange = VerticalScrollBarChange
+    TabOrder = 2
+    OnChange = ScrollBarChange
   end
-  object ScaleFloatSpin: TFloatSpinEdit
-    AnchorSideTop.Control = ScaleLabel
-    AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = MainPaintBox
-    Left = 2
-    Height = 23
-    Top = 217
-    Width = 142
-    Anchors = [akTop, akLeft, akRight]
-    BorderSpacing.Top = 2
-    Increment = 1
-    MaxValue = 100
-    MinValue = 0
-    OnChange = ScaleFloatSpinChange
-    TabOrder = 6
-    Value = 100
-  end
-  object ScaleLabel: TLabel
+  object CanvasPropsPanel: TPanel
+    AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = ToolsPanel
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = MainPaintBox
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
     Left = 2
-    Height = 15
-    Top = 200
-    Width = 142
-    Anchors = [akTop, akLeft, akRight]
-    Caption = 'Scale:'
-    ParentColor = False
+    Height = 607
+    Top = 10
+    Width = 116
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    AutoSize = True
+    BorderSpacing.Top = 8
+    BorderSpacing.Around = 2
+    BevelOuter = bvNone
+    ClientHeight = 607
+    ClientWidth = 116
+    TabOrder = 3
+    object ChangeLineColorButton: TColorButton
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 25
+      Top = 416
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ColorDialog = DrawColorDialog
+      OnColorChanged = ChangeLineColorButtonColorChanged
+    end
+    object PenWidthSpinEdit: TSpinEdit
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 579
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      MinValue = 1
+      OnChange = PenWidthSpinEditChange
+      TabOrder = 0
+      Value = 1
+    end
+    object LineColorLabel: TLabel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 15
+      Top = 400
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      Caption = 'Line color:'
+      ParentColor = False
+    end
+    object LineWidthLabel: TLabel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 15
+      Top = 563
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      Caption = 'Line width:'
+      ParentColor = False
+    end
+    object ChangeFillColorButton: TColorButton
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 25
+      Top = 495
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ColorDialog = DrawColorDialog
+      OnColorChanged = ChangeFillColorButtonColorChanged
+    end
+    object FillColorLabel: TLabel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 15
+      Top = 479
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      Caption = 'Fill color:'
+      ParentColor = False
+    end
+    object ChangeFillStyleComboBox: TComboBox
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 538
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      ItemHeight = 15
+      OnChange = ChangeFillStyleComboBoxChange
+      Style = csDropDownList
+      TabOrder = 1
+    end
+    object FillStyleLabel: TLabel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 15
+      Top = 522
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      Caption = 'Fill style:'
+      ParentColor = False
+    end
+    object LineStyleLabel: TLabel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 15
+      Top = 440
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      Caption = 'Line style:'
+      ParentColor = False
+    end
+    object ChangeLineStyleComboBox: TComboBox
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 456
+      Width = 116
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Top = 2
+      ItemHeight = 15
+      OnChange = ChangeLineStyleComboBoxChange
+      Style = csDropDownList
+      TabOrder = 2
+    end
+    object ScaleFloatSpin: TFloatSpinEdit
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Control = ScaleLabel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 17
+      Width = 116
+      Anchors = [akTop, akLeft, akRight]
+      BorderSpacing.Top = 2
+      Increment = 1
+      MaxValue = 100
+      MinValue = 0
+      OnChange = ScaleFloatSpinChange
+      TabOrder = 3
+      Value = 100
+    end
+    object ScaleLabel: TLabel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideTop.Control = CanvasPropsPanel
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 116
+      Anchors = [akTop, akLeft, akRight]
+      Caption = 'Scale:'
+      ParentColor = False
+    end
   end
   object MainMenu: TMainMenu
     left = 232
@@ -221,6 +287,10 @@ object DrawForm: TDrawForm
     end
     object EditMenuItem: TMenuItem
       Caption = 'Edit'
+      object ShowAllMenuItem: TMenuItem
+        Caption = 'Show all'
+        OnClick = ShowAllMenuItemClick
+      end
       object ClearAllMenuItem: TMenuItem
         Caption = 'Clear all'
         OnClick = ClearAllMenuItemClick

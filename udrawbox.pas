@@ -18,6 +18,7 @@ type
     ChangeLineStyleComboBox: TComboBox;
     FillColorLabel: TLabel;
     FillStyleLabel: TLabel;
+    CanvasPropsPanel: TPanel;
     ScaleFloatSpin: TFloatSpinEdit;
     ScaleLabel: TLabel;
     LineStyleLabel: TLabel;
@@ -25,6 +26,7 @@ type
     DelimeterMenuItem: TMenuItem;
     ClearAllMenuItem: TMenuItem;
     HorizontalScrollBar: TScrollBar;
+    ShowAllMenuItem: TMenuItem;
     VerticalScrollBar: TScrollBar;
     ToolsPanel: TPanel;
     LineColorLabel: TLabel;
@@ -48,10 +50,10 @@ type
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
-    procedure HorizontalScrollBarChange(Sender: TObject);
+    procedure ScrollBarChange(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-    procedure VerticalScrollBarChange(Sender: TObject);
+    procedure ShowAllMenuItemClick(Sender: TObject);
     procedure SetScrollBars;
     procedure MainPaintBoxResize(Sender: TObject);
     procedure ScaleFloatSpinChange(Sender: TObject);
@@ -88,7 +90,7 @@ type
 
 const
   TOOL_BUTTON_SIZE: integer = 32;
-  TOOL_BUTTON_MARGIN: integer = 2;
+  TOOL_BUTTON_MARGIN: integer = 4;
   TOOL_BUTTON_PADDING: integer = 1;
   START_LINE_COLOR: TColor = clBlack;
   START_FILL_COLOR: TColor = clWhite;
@@ -157,14 +159,12 @@ begin
   IconsPerRow := ToolsPanel.Width div
     (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
 
-  ToolsPanel.Height := Ceil(Length(FiguresBase) / IconsPerRow) *
-    (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) + TOOL_BUTTON_PADDING * 2;
-
   for i:=Low(FiguresBase) to High(FiguresBase) do
   begin
     b := TSpeedButton.Create(ToolsPanel);
     b.Parent := ToolsPanel;
     b.Name := 'ToolButton' + FiguresBase[i].ClassName;
+    b.GroupIndex := 1;
     b.Tag := i;
     b.OnClick := @ToolButtonClick;
 
@@ -197,14 +197,10 @@ begin
   ScaleFloatSpin.MinValue := ZOOM_MIN * 100;
   ScaleFloatSpin.MaxValue := ZOOM_MAX * 100;
 
-  HorizontalScrollBar.Min := -CANVAS_OFFSET_BORDER_SIZE;
-  HorizontalScrollBar.Max := CANVAS_OFFSET_BORDER_SIZE;
-
-  VerticalScrollBar.Min := -CANVAS_OFFSET_BORDER_SIZE;
-  VerticalScrollBar.Max := CANVAS_OFFSET_BORDER_SIZE;
-
   CanvasWidth := MainPaintBox.Width;
   CanvasHeight := MainPaintBox.Height;
+
+  SetScrollBars;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
@@ -218,17 +214,37 @@ begin
   MainPaintBox.Invalidate;
 end;
 
-procedure TDrawForm.HorizontalScrollBarChange(Sender: TObject);
+procedure TDrawForm.ShowAllMenuItemClick(Sender: TObject);
+var
+  NewScale: double;
+  i: TFigure;
 begin
-  CanvasOffset.x := HorizontalScrollBar.Position;
-  MainPaintBox.Invalidate;
+  for i in CanvasItems do
+  begin
+    WorldTopLeft.x := Min(WorldTopLeft.x, i.TopLeftBorder.x);
+    WorldTopLeft.y := Min(WorldTopLeft.y, i.TopLeftBorder.y);
+    WorldBottomRight.x := Max(WorldBottomRight.x, i.BottomRightBorder.x);
+    WorldBottomRight.y := Max(WorldBottomRight.y, i.BottomRightBorder.y);
+  end;
+  if (WorldTopLeft.x <> WorldBottomRight.x) and
+    (WorldTopLeft.y <> WorldBottomRight.y) then
+  begin
+    NewScale := Scale*Min(CanvasWidth / Scale / (WorldBottomRight.x - WorldTopLeft.x),
+      CanvasHeight / Scale / (WorldBottomRight.y - WorldTopLeft.y));;
+    ZoomPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
+      (WorldBottomRight.y + WorldTopLeft.y)/2), NewScale);
+    SetScrollBars;
+    MainPaintBox.Invalidate;
+  end;
 end;
 
-procedure TDrawForm.VerticalScrollBarChange(Sender: TObject);
+procedure TDrawForm.ScrollBarChange(Sender: TObject);
 begin
+  CanvasOffset.x := HorizontalScrollBar.Position;
   CanvasOffset.y := VerticalScrollBar.Position;
   MainPaintBox.Invalidate;
 end;
+
 
 procedure TDrawForm.SetScrollBars;
 var
@@ -266,6 +282,7 @@ procedure TDrawForm.MainPaintBoxResize(Sender: TObject);
 begin
   CanvasWidth := MainPaintBox.Width;
   CanvasHeight := MainPaintBox.Height;
+  SetScrollBars;
 end;
 
 procedure TDrawForm.ScaleFloatSpinChange(Sender: TObject);
@@ -281,13 +298,10 @@ end;
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
 var
   b: TSpeedButton;
-  i: integer;
 begin
   b := Sender as TSpeedButton;
   CurrentFigure := FiguresBase[b.Tag];
-  for i := 0 to ToolsPanel.ControlCount-1 do
-    (ToolsPanel.Controls[i] as TSpeedButton).Enabled := true;
-  b.Enabled := false;
+  b.Down := true;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
@@ -303,6 +317,7 @@ begin
     LINE_STYLES[CurrentLineStyle].PenStyle,
     FILL_STYLES[CurrentFillStyle].BrushStyle, Button);
   MainPaintBox.Invalidate;
+  SetScrollBars;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
@@ -317,8 +332,8 @@ begin
       SetLength(CanvasItems, Length(CanvasItems) - 1);
       IsDrawing := false;
     end;
-    SetScrollBars;
     MainPaintBox.Invalidate;
+    SetScrollBars;
   end;
 end;
 
@@ -340,7 +355,6 @@ begin
       FreeAndNil(UndoHistory[i]);
     SetLength(UndoHistory, 0);
   end;
-  SetScrollBars;
   MainPaintBox.Invalidate;
 end;
 
@@ -355,7 +369,13 @@ begin
     FillRect(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
   for i in CanvasItems do
+  begin
+    WorldTopLeft.x := Min(WorldTopLeft.x, i.TopLeftBorder.x);
+    WorldTopLeft.y := Min(WorldTopLeft.y, i.TopLeftBorder.y);
+    WorldBottomRight.x := Max(WorldBottomRight.x, i.BottomRightBorder.x);
+    WorldBottomRight.y := Max(WorldBottomRight.y, i.BottomRightBorder.y);
     i.Draw(MainPaintBox.Canvas);
+  end;
 end;
 
 procedure TDrawForm.ChangeLineColorButtonColorChanged(Sender: TObject);
@@ -391,6 +411,7 @@ begin
     UndoHistory[High(UndoHistory)] := CanvasItems[High(CanvasItems)];
     SetLength(CanvasItems, Length(CanvasItems) - 1);
     MainPaintBox.Invalidate;
+    SetScrollBars;
   end;
 end;
 
@@ -402,6 +423,7 @@ begin
     CanvasItems[High(CanvasItems)] := UndoHistory[High(UndoHistory)];
     SetLength(UndoHistory, Length(UndoHistory) - 1);
     MainPaintBox.Invalidate;
+    SetScrollBars;
   end;
 end;
 
@@ -415,8 +437,8 @@ begin
   for i := Low(CanvasItems) to High(CanvasItems) do
     FreeAndNil(CanvasItems[i]);
   SetLength(CanvasItems, 0);
-  SetScrollBars;
   MainPaintBox.Invalidate;
+  SetScrollBars;
 end;
 
 procedure TDrawForm.AboutMenuItemClick(Sender: TObject);
