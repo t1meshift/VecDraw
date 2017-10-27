@@ -51,7 +51,7 @@ object DrawForm: TDrawForm
     Anchors = [akTop, akLeft, akRight, akBottom]
     PageSize = 0
     TabOrder = 1
-    OnChange = ScrollBarChange
+    OnScroll = ScrollBarScroll
   end
   object VerticalScrollBar: TScrollBar
     AnchorSideLeft.Control = MainPaintBox
@@ -69,7 +69,7 @@ object DrawForm: TDrawForm
     Kind = sbVertical
     PageSize = 0
     TabOrder = 2
-    OnChange = ScrollBarChange
+    OnScroll = ScrollBarScroll
   end
   object CanvasPropsPanel: TPanel
     AnchorSideLeft.Control = Owner

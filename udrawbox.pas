@@ -50,7 +50,6 @@ type
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
-    procedure ScrollBarChange(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure ShowAllMenuItemClick(Sender: TObject);
@@ -72,6 +71,8 @@ type
     procedure RedoActionExecute(Sender: TObject);
     procedure AboutMenuItemClick(Sender: TObject);
     procedure ExitMenuItemClick(Sender: TObject);
+    procedure ScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
+      var ScrollPos: Integer);
 
   private
     { private declarations }
@@ -229,20 +230,14 @@ begin
   if (WorldTopLeft.x <> WorldBottomRight.x) and
     (WorldTopLeft.y <> WorldBottomRight.y) then
   begin
-    NewScale := Scale*Min(CanvasWidth / Scale / (WorldBottomRight.x - WorldTopLeft.x),
-      CanvasHeight / Scale / (WorldBottomRight.y - WorldTopLeft.y));;
+    NewScale := Scale*Min(CanvasWidth / Scale
+      / (WorldBottomRight.x - WorldTopLeft.x), CanvasHeight / Scale
+      / (WorldBottomRight.y - WorldTopLeft.y));
     ZoomPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
       (WorldBottomRight.y + WorldTopLeft.y)/2), NewScale);
     SetScrollBars;
     MainPaintBox.Invalidate;
   end;
-end;
-
-procedure TDrawForm.ScrollBarChange(Sender: TObject);
-begin
-  CanvasOffset.x := HorizontalScrollBar.Position;
-  CanvasOffset.y := VerticalScrollBar.Position;
-  MainPaintBox.Invalidate;
 end;
 
 
@@ -276,6 +271,14 @@ begin
   HorizontalScrollBar.Max := HorMax;
   VerticalScrollBar.Min := VerMin;
   VerticalScrollBar.Max := VerMax;
+
+  HorizontalScrollBar.Position := Round(CanvasOffset.x);
+  VerticalScrollBar.Position := Round(CanvasOffset.y);
+
+  HorizontalScrollBar.PageSize := Floor((CanvasCorner.x-CanvasOffset.x)
+    / (HorMax-HorMin));
+  VerticalScrollBar.PageSize := Floor((CanvasCorner.y-CanvasOffset.y)
+    / (VerMax-VerMin));
 end;
 
 procedure TDrawForm.MainPaintBoxResize(Sender: TObject);
@@ -449,6 +452,14 @@ end;
 procedure TDrawForm.ExitMenuItemClick(Sender: TObject);
 begin
   DrawForm.Close;
+end;
+
+procedure TDrawForm.ScrollBarScroll(Sender: TObject;
+  ScrollCode: TScrollCode; var ScrollPos: Integer);
+begin
+  CanvasOffset.x := HorizontalScrollBar.Position;
+  CanvasOffset.y := VerticalScrollBar.Position;
+  MainPaintBox.Invalidate;
 end;
 
 procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
