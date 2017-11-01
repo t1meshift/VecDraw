@@ -218,21 +218,12 @@ end;
 procedure TDrawForm.ShowAllMenuItemClick(Sender: TObject);
 var
   NewScale: double;
-  i: TFigure;
 begin
-  for i in CanvasItems do
-  begin
-    WorldTopLeft.x := Min(WorldTopLeft.x, i.TopLeftBorder.x);
-    WorldTopLeft.y := Min(WorldTopLeft.y, i.TopLeftBorder.y);
-    WorldBottomRight.x := Max(WorldBottomRight.x, i.BottomRightBorder.x);
-    WorldBottomRight.y := Max(WorldBottomRight.y, i.BottomRightBorder.y);
-  end;
   if (WorldTopLeft.x <> WorldBottomRight.x) and
     (WorldTopLeft.y <> WorldBottomRight.y) then
   begin
-    NewScale := Scale*Min(CanvasWidth / Scale
-      / (WorldBottomRight.x - WorldTopLeft.x), CanvasHeight / Scale
-      / (WorldBottomRight.y - WorldTopLeft.y));
+    NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x),
+      CanvasHeight / (WorldBottomRight.y - WorldTopLeft.y));
     ZoomPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
       (WorldBottomRight.y + WorldTopLeft.y)/2), NewScale);
     SetScrollBars;
@@ -275,9 +266,9 @@ begin
   HorizontalScrollBar.Position := Round(CanvasOffset.x);
   VerticalScrollBar.Position := Round(CanvasOffset.y);
 
-  HorizontalScrollBar.PageSize := Floor((CanvasCorner.x-CanvasOffset.x)
+  HorizontalScrollBar.PageSize := Round((CanvasCorner.x-CanvasOffset.x)
     / (HorMax-HorMin));
-  VerticalScrollBar.PageSize := Floor((CanvasCorner.y-CanvasOffset.y)
+  VerticalScrollBar.PageSize := Round((CanvasCorner.y-CanvasOffset.y)
     / (VerMax-VerMin));
 end;
 

@@ -89,8 +89,6 @@
         <StackChecks Value="True"/>
       </Checks>
       <VerifyObjMethodCallValidity Value="True"/>
-      <TargetCPU Value="i386"/>
-      <TargetOS Value="win32"/>
     </CodeGeneration>
     <Linking>
       <Debugging>
