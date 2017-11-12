@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, UDrawBox, UAbout, UFigures, UTransform
+  Forms, UDrawBox, UAbout
   { you can add units after this };
 
 {$R *.res}
@@ -19,4 +19,5 @@ begin
   Application.CreateForm(TAboutForm, AboutForm);
   Application.Run;
 end.
+
 

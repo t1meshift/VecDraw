@@ -21,40 +21,24 @@ type
     LineWidth: integer;
     LineStyle: TPenStyle;
     FillStyle: TBrushStyle;
-    Button: TMouseButton;
-    FCanBeDestroyed: boolean;
     function FTopLeft: TDoublePoint;
     function FBottomRight: TDoublePoint;
     procedure SetCanvasStyles(ACanvas: TCanvas);
   public
-    property CanBeDestroyed: boolean read FCanBeDestroyed;
     property TopLeftBorder: TDoublePoint read FTopLeft;
     property BottomRightBorder: TDoublePoint read FBottomRight;
-    constructor Create(X, Y: double; ALineColor: TColor; ALineWidth: integer;
-      AFillColor: TColor; ALineStyle: TPenStyle; AFillStyle: TBrushStyle;
-      AButton: TMouseButton);
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
     procedure MouseMove(X, Y: integer); virtual; abstract;
-    procedure MouseUp(X, Y: integer); virtual;
   end;
 
   TFigureList = array of TFigure;
   TFigureClass = class of TFigure;
-  TFigureClassList = array of TFigureClass;
-
-  { THand }
-
-  THand = class(TFigure)
-    procedure MouseMove(X, Y: integer); override;
-    procedure MouseUp(X, Y: integer); override;
-    procedure Draw(ACanvas: TCanvas); override;
-  end;
 
   { TMagnifier }
 
   TMagnifier = class(TFigure)
+    constructor Create(X, Y: double);
     procedure MouseMove(X, Y: integer); override;
-    procedure MouseUp(X, Y: integer); override;
     procedure Draw(ACanvas: TCanvas); override;
   end;
 
@@ -62,6 +46,8 @@ type
 
   TPolyLine = class(TFigure)
   public
+    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+      ALineStyle: TPenStyle);
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
   end;
@@ -77,30 +63,42 @@ type
 
   TRectangle = class(TFigure)
   public
+    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
+  end;
+
+  { TRoundRect }
+
+  TRoundRect = class(TFigure)
+    private
+      RoundX, RoundY: integer;
+    public
+      constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+        ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle;
+        ARoundX, ARoundY: integer);
+      procedure Draw(ACanvas: TCanvas); override;
+      procedure MouseMove(X, Y: integer); override;
   end;
 
   { TEllipse }
 
   TEllipse = class(TFigure)
   public
+    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
   end;
 
-procedure RegisterFigures(AFigures: TFigureClassList);
-
-var
-  FiguresBase: TFigureClassList;
-
 implementation
 
-{ TFigure }
+{ TRoundRect }
 
-constructor TFigure.Create(X, Y: double;
-  ALineColor: TColor; ALineWidth: integer; AFillColor: TColor;
-  ALineStyle: TPenStyle; AFillStyle: TBrushStyle; AButton: TMouseButton);
+constructor TRoundRect.Create(X, Y: double; ALineWidth: integer;
+  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
+  AFillStyle: TBrushStyle; ARoundX, ARoundY: integer);
 begin
   SetLength(Vertexes, 2);
   Vertexes[0] := DoublePoint(X, Y);
@@ -110,14 +108,27 @@ begin
   LineStyle := ALineStyle;
   FillColor := AFillColor;
   FillStyle := AFillStyle;
-  Button := AButton;
-  FCanBeDestroyed := false;
+  RoundX := ARoundX;
+  RoundY := ARoundY;
 end;
 
-procedure TFigure.MouseUp(X, Y: integer);
+procedure TRoundRect.Draw(ACanvas: TCanvas);
+var
+  CanvasTopLeft, CanvasBottomRight: TPoint;
 begin
-  //dummy
+  SetCanvasStyles(ACanvas);
+  CanvasTopLeft := WorldToCanvas(Vertexes[0].x, Vertexes[0].y);
+  CanvasBottomRight := WorldToCanvas(Vertexes[1].x, Vertexes[1].y);
+  ACanvas.RoundRect(CanvasTopLeft.x, CanvasTopLeft.y,
+    CanvasBottomRight.x, CanvasBottomRight.y, RoundX*2, RoundY*2);
 end;
+
+procedure TRoundRect.MouseMove(X, Y: integer);
+begin
+  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
+end;
+
+{ TFigure }
 
 function TFigure.FTopLeft: TDoublePoint;
 var
@@ -155,92 +166,57 @@ begin
   end;
 end;
 
-{ THand }
-
-procedure THand.MouseMove(X, Y: integer);
-begin
-  Vertexes[1] := CanvasToWorld(X, Y);
-  CanvasOffset.x := CanvasOffset.x + Vertexes[0].x - Vertexes[1].x;
-  CanvasOffset.y := CanvasOffset.y + Vertexes[0].y - Vertexes[1].y;
-end;
-
-procedure THand.MouseUp(X, Y: integer);
-begin
-  inherited MouseUp(X, Y);
-  FCanBeDestroyed := true;
-end;
-
-procedure THand.Draw(ACanvas: TCanvas);
-begin
-  //dummy
-end;
-
-
 { TMagnifier }
+
+constructor TMagnifier.Create(X, Y: double);
+begin
+  SetLength(Vertexes, 2);
+  Vertexes[0] := DoublePoint(X, Y);
+  Vertexes[1] := Vertexes[0];
+end;
 
 procedure TMagnifier.MouseMove(X, Y: integer);
 begin
-  if Button = mbLeft then
-    Vertexes[1] := CanvasToWorld(X, Y)
-  else
-    FCanBeDestroyed := true;
-end;
-
-procedure TMagnifier.MouseUp(X, Y: integer);
-const
-  eps = 16;
-var
-  TopLeft, BottomRight: TDoublePoint;
-  NewScale: double;
-begin
-  inherited MouseUp(X, Y);
-
-  TopLeft := DoublePoint(Min(Vertexes[0].x, Vertexes[1].x),
-    Min(Vertexes[0].y, Vertexes[1].y));
-
-  BottomRight := DoublePoint(Max(Vertexes[0].x, Vertexes[1].x),
-    Max(Vertexes[0].y, Vertexes[1].y));
-
-  if (sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < eps*eps)
-  then
-  begin
-    case Button of
-      mbLeft: ZoomPoint(CanvasToWorld(X, Y), Scale*2);
-      mbRight: ZoomPoint(CanvasToWorld(X, Y), Scale/2);
-    end;
-  end
-  else
-  begin
-    if (TopLeft.x <> BottomRight.x) and (TopLeft.y <> BottomRight.y) then
-    begin
-      NewScale := Scale*Max(CanvasWidth / Scale / (BottomRight.x - TopLeft.x),
-        CanvasHeight / Scale / (BottomRight.y - TopLeft.y));
-      ZoomPoint(DoublePoint((TopLeft.x + BottomRight.x) / 2,
-        (TopLeft.y + BottomRight.y) / 2), NewScale);
-    end;
-  end;
-  FCanBeDestroyed := true;
+  Vertexes[1] := CanvasToWorld(X, Y)
 end;
 
 procedure TMagnifier.Draw(ACanvas: TCanvas);
+const
+  eps = 16;
 var
   TopLeft, BottomRight: TPoint;
 begin
   TopLeft := WorldToCanvas(Vertexes[0]);
   BottomRight := WorldToCanvas(Vertexes[1]);
-  with ACanvas do
+
+  if sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) >= eps*eps
+  then
   begin
-    Pen.Style := psDash;
-    Pen.Width := 1;
-    Pen.Color := clBlack;
-    Pen.Mode := pmNot;
-    Brush.Style := bsClear;
-    Rectangle(TopLeft.x, TopLeft.y, BottomRight.x, BottomRight.y);
-    Pen.Mode := pmCopy;
+    with ACanvas do
+    begin
+      Pen.Style := psDash;
+      Pen.Width := 1;
+      Pen.Color := clBlack;
+      Pen.Mode := pmNot;
+      Brush.Style := bsClear;
+      Rectangle(TopLeft.x, TopLeft.y, BottomRight.x, BottomRight.y);
+      Pen.Mode := pmCopy;
+    end;
   end;
 end;
 
 { TPolyLine }
+
+constructor TPolyLine.Create(X, Y: double; ALineWidth: integer;
+  ALineColor: TColor; ALineStyle: TPenStyle);
+begin
+  SetLength(Vertexes, 2);
+  Vertexes[0] := DoublePoint(X, Y);
+  Vertexes[1] := Vertexes[0];
+  LineColor := ALineColor;
+  LineWidth := ALineWidth;
+  LineStyle := ALineStyle;
+end;
 
 procedure TPolyLine.Draw(ACanvas: TCanvas);
 var
@@ -256,26 +232,32 @@ end;
 
 procedure TPolyLine.MouseMove(X, Y: integer);
 begin
-  if Button = mbLeft then
-  begin
-    SetLength(Vertexes, Length(Vertexes) + 1);
-    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
-  end
-  else
-    FCanBeDestroyed := true;
+  SetLength(Vertexes, Length(Vertexes) + 1);
+  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
 end;
 
 { TLine }
 
 procedure TLine.MouseMove(X, Y: integer);
 begin
-  if Button = mbLeft then
-    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
-  else
-    FCanBeDestroyed := true;
+  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
 end;
 
 { TRectangle }
+
+constructor TRectangle.Create(X, Y: double; ALineWidth: integer;
+  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
+  AFillStyle: TBrushStyle);
+begin
+  SetLength(Vertexes, 2);
+  Vertexes[0] := DoublePoint(X, Y);
+  Vertexes[1] := Vertexes[0];
+  LineColor := ALineColor;
+  LineWidth := ALineWidth;
+  LineStyle := ALineStyle;
+  FillColor := AFillColor;
+  FillStyle := AFillStyle;
+end;
 
 procedure TRectangle.Draw(ACanvas: TCanvas);
 var
@@ -290,13 +272,24 @@ end;
 
 procedure TRectangle.MouseMove(X, Y: integer);
 begin
-  if Button = mbLeft then
-    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
-  else
-    FCanBeDestroyed := true;
+  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
 end;
 
 { TEllipse }
+
+constructor TEllipse.Create(X, Y: double; ALineWidth: integer;
+  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
+  AFillStyle: TBrushStyle);
+begin
+  SetLength(Vertexes, 2);
+  Vertexes[0] := DoublePoint(X, Y);
+  Vertexes[1] := Vertexes[0];
+  LineColor := ALineColor;
+  LineWidth := ALineWidth;
+  LineStyle := ALineStyle;
+  FillColor := AFillColor;
+  FillStyle := AFillStyle;
+end;
 
 procedure TEllipse.Draw(ACanvas: TCanvas);
 var
@@ -311,33 +304,8 @@ end;
 
 procedure TEllipse.MouseMove(X, Y: integer);
 begin
-  if Button = mbLeft then
-    Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
-  else
-    FCanBeDestroyed := true;
+  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
 end;
-
-procedure RegisterFigures(AFigures: TFigureClassList);
-var
-  i: TFigureClass;
-begin
-  for i in AFigures do
-  begin
-    SetLength(FiguresBase, Length(FiguresBase) + 1);
-    FiguresBase[High(FiguresBase)] := i;
-  end;
-end;
-
-initialization
-
-RegisterFigures(TFigureClassList.Create(
-  THand,
-  TMagnifier,
-  TPolyLine,
-  TLine,
-  TRectangle,
-  TEllipse
-));
 
 end.
 
