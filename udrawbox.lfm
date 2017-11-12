@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 223
+  Left = 204
   Height = 639
-  Top = 24
+  Top = 43
   Width = 1008
   Caption = 'DrawForm'
   ClientHeight = 619
@@ -9,7 +9,7 @@ object DrawForm: TDrawForm
   Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
-  Position = poDesktopCenter
+  Position = poScreenCenter
   LCLVersion = '1.6.4.0'
   object MainPaintBox: TPaintBox
     Left = 120

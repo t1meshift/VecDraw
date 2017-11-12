@@ -116,7 +116,7 @@ begin
     b.OnClick := @ToolButtonClick;
 
     CurrentIcon := TPicture.Create;
-    CurrentIcon.LoadFromFile(ToolsBase[i].ClassName + '.png');
+    CurrentIcon.LoadFromFile('./icons/' + ToolsBase[i].ClassName + '.png');
     b.Glyph := CurrentIcon.Bitmap;
     CurrentIcon.Free;
 
