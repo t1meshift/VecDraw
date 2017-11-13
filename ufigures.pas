@@ -15,20 +15,21 @@ type
  { TFigure }
 
   TFigure = class
-  protected
-    Vertexes: TDPointList;
-    LineColor, FillColor: TColor;
-    LineWidth: integer;
-    LineStyle: TPenStyle;
-    FillStyle: TBrushStyle;
-    function FTopLeft: TDoublePoint;
-    function FBottomRight: TDoublePoint;
-    procedure SetCanvasStyles(ACanvas: TCanvas);
-  public
-    property TopLeftBorder: TDoublePoint read FTopLeft;
-    property BottomRightBorder: TDoublePoint read FBottomRight;
-    procedure Draw(ACanvas: TCanvas); virtual; abstract;
-    procedure MouseMove(X, Y: integer); virtual; abstract;
+    protected
+      Vertexes: TDPointList;
+      LineColor, FillColor: TColor;
+      LineWidth: integer;
+      LineStyle: TPenStyle;
+      FillStyle: TBrushStyle;
+      function FTopLeft: TDoublePoint;
+
+      function FBottomRight: TDoublePoint;
+      procedure SetCanvasStyles(ACanvas: TCanvas);
+    public
+      property TopLeftBorder: TDoublePoint read FTopLeft;
+      property BottomRightBorder: TDoublePoint read FBottomRight;
+      procedure Draw(ACanvas: TCanvas); virtual; abstract;
+      procedure MouseMove(X, Y: integer); virtual; abstract;
   end;
 
   TFigureList = array of TFigure;
@@ -45,28 +46,28 @@ type
  { TPolyLine }
 
   TPolyLine = class(TFigure)
-  public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle);
-    procedure Draw(ACanvas: TCanvas); override;
-    procedure MouseMove(X, Y: integer); override;
+    public
+      constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+        ALineStyle: TPenStyle);
+      procedure Draw(ACanvas: TCanvas); override;
+      procedure MouseMove(X, Y: integer); override;
   end;
 
   { TLine }
 
   TLine = class(TPolyLine)
-  public
-    procedure MouseMove(X, Y: integer); override;
+    public
+      procedure MouseMove(X, Y: integer); override;
   end;
 
   { TRectangle }
 
   TRectangle = class(TFigure)
-  public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
-    procedure Draw(ACanvas: TCanvas); override;
-    procedure MouseMove(X, Y: integer); override;
+    public
+      constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+        ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
+      procedure Draw(ACanvas: TCanvas); override;
+      procedure MouseMove(X, Y: integer); override;
   end;
 
   { TRoundRect }
@@ -85,14 +86,82 @@ type
   { TEllipse }
 
   TEllipse = class(TFigure)
-  public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
-    procedure Draw(ACanvas: TCanvas); override;
-    procedure MouseMove(X, Y: integer); override;
+    public
+      constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+        ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
+      procedure Draw(ACanvas: TCanvas); override;
+      procedure MouseMove(X, Y: integer); override;
+  end;
+
+  { TPolygon }
+
+  TPolygon = class(TFigure)
+    private
+      VertexCount: integer;
+      StartPoint: TDoublePoint;
+    public
+      constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
+        ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle;
+        AVertexCount: integer);
+     procedure Draw(ACanvas: TCanvas); override;
+     procedure MouseMove(X, Y: integer); override;
   end;
 
 implementation
+
+{ TPolygon }
+
+constructor TPolygon.Create(X, Y: double; ALineWidth: integer;
+  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
+  AFillStyle: TBrushStyle; AVertexCount: integer);
+var
+  ScreenPoint: TPoint;
+begin
+  SetLength(Vertexes, AVertexCount);
+  StartPoint := DoublePoint(X, Y);
+  ScreenPoint := WorldToCanvas(X, Y);
+  VertexCount := AVertexCount;
+  MouseMove(ScreenPoint.x, ScreenPoint.y);
+  LineColor := ALineColor;
+  LineWidth := ALineWidth;
+  LineStyle := ALineStyle;
+  FillColor := AFillColor;
+  FillStyle := AFillStyle;
+end;
+
+procedure TPolygon.Draw(ACanvas: TCanvas);
+var
+  i: integer;
+  CanvasVertexes: TPointList;
+begin
+  SetCanvasStyles(ACanvas);
+  SetLength(CanvasVertexes, Length(Vertexes));
+  for i := Low(Vertexes) to High(Vertexes) do
+    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+  ACanvas.Polygon(CanvasVertexes);
+end;
+
+procedure TPolygon.MouseMove(X, Y: integer);
+var
+  i: integer;
+  CurrentRotation, Radius: double;
+  WorldPos: TDoublePoint;
+begin
+  WorldPos := CanvasToWorld(X, Y);
+  CurrentRotation := arctan2(WorldPos.y - StartPoint.y,
+    WorldPos.x - StartPoint.x);
+  Radius := sqrt(sqr(WorldPos.x - StartPoint.x)
+    + sqr(WorldPos.y - StartPoint.y));
+  Vertexes[0].x := StartPoint.x + Radius*cos(CurrentRotation);
+  Vertexes[0].y := StartPoint.y + Radius*sin(CurrentRotation);
+  for i := Low(Vertexes) to High(Vertexes) do
+  begin
+    Vertexes[i].x := StartPoint.x + Radius*cos(CurrentRotation
+      + (i * 2*pi / VertexCount));
+    Vertexes[i].y := StartPoint.y + Radius*sin(CurrentRotation
+      + (i * 2*pi / VertexCount));
+  end;
+end;
 
 { TRoundRect }
 

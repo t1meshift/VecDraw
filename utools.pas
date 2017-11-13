@@ -8,6 +8,10 @@ uses
   Classes, SysUtils, Controls, UFigures, UToolParams, UTransform, Graphics,
   Math;
 
+{
+ TODO:
+ - abstract class for Fillable figures
+}
 type
   TTool = class
     private
@@ -113,10 +117,85 @@ type
       function GetParams: TToolParamList; override;
   end;
 
+  { TPolygonTool }
+
+  TPolygonTool = class(TTool)
+    private
+      FLineWidth: TLineWidthParam;
+      FLineColor: TLineColorParam;
+      FLineStyle: TLineStyleParam;
+      FFillColor: TFillColorParam;
+      FFillStyle: TFillStyleParam;
+      FVertexCount: TVertexCountParam;
+    public
+      constructor Create; override;
+      destructor Destroy; override;
+      function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
+      procedure MouseMove(X, Y: integer); override;
+      procedure MouseUp(X, Y: integer); override;
+      function GetParams: TToolParamList; override;
+  end;
+
 var
   ToolClassBase: TToolClassList;
 
 implementation
+
+{ TPolygonTool }
+
+constructor TPolygonTool.Create;
+begin
+  FFigureDestroyed := false;
+  FFigure := nil;
+  FLineWidth := TLineWidthParam.Create;
+  FLineColor := TLineColorParam.Create;
+  FLineStyle := TLineStyleParam.Create;
+  FFillColor := TFillColorParam.Create;
+  FFillStyle := TFillStyleParam.Create;
+  FVertexCount := TVertexCountParam.Create;
+end;
+
+destructor TPolygonTool.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(FLineWidth);
+  FreeAndNil(FLineColor);
+  FreeAndNil(FLineStyle);
+  FreeAndNil(FFillStyle);
+  FreeAndNil(FFillColor);
+  FreeAndNil(FVertexCount);
+end;
+
+function TPolygonTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
+var
+  WorldCoords: TDoublePoint;
+begin
+  WorldCoords := CanvasToWorld(X, Y);
+  if Button = mbLeft then
+  begin
+    FFigure := TPolygon.Create(WorldCoords.x, WorldCoords.y, FLineWidth.Value,
+      FLineColor.Value, FLineStyle.Value, FFillColor.Value, FFillStyle.Value,
+      FVertexCount.Value);
+  end;
+  Result := FFigure;
+end;
+
+procedure TPolygonTool.MouseMove(X, Y: integer);
+begin
+  if FFigure <> nil then
+    FFigure.MouseMove(X, Y);
+end;
+
+procedure TPolygonTool.MouseUp(X, Y: integer);
+begin
+  FFigure := nil;
+end;
+
+function TPolygonTool.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(FFillColor, FFillStyle, FLineColor,
+     FLineStyle, FLineWidth, FVertexCount);
+end;
 
 { TRoundRectTool }
 
@@ -403,7 +482,8 @@ ToolClassBase := TToolClassList.Create(
   TLineTool,
   TRectangleTool,
   TEllipseTool,
-  TRoundRectTool
+  TRoundRectTool,
+  TPolygonTool
 );
 
 end.

@@ -7,7 +7,12 @@ interface
 uses
   Classes, SysUtils, Controls, Graphics, ExtCtrls, Dialogs, Spin,
   StdCtrls;
-
+{
+ TODO:
+ - class for int values (SpinEdit)
+ - class for color values (TColorButton)
+ - class for selectable values (ComboBox)
+}
 type
   TToolParam = class
     private
@@ -116,7 +121,56 @@ type
     constructor Create;
   end;
 
+  { TVertexCountParam }
+
+  TVertexCountParam = class(TToolParam)
+    private
+      FVertexCount: integer;
+      procedure FSetVertexCount(AVertexCount: integer);
+      procedure OnChangeControl(Sender: TObject); override;
+    public
+      property Value: integer read FVertexCount write FSetVertexCount;
+      constructor Create;
+      function ToControl(AParentPanel: TPanel): TControl; override;
+  end;
+
 implementation
+
+{ TVertexCountParam }
+
+procedure TVertexCountParam.FSetVertexCount(AVertexCount: integer);
+begin
+  if AVertexCount < 3 then
+    FVertexCount := 3
+  else if AVertexCount > 50 then
+    FVertexCount := 50
+  else
+    FVertexCount := AVertexCount;
+end;
+
+procedure TVertexCountParam.OnChangeControl(Sender: TObject);
+begin
+  FSetVertexCount((Sender as TSpinEdit).Value);
+end;
+
+constructor TVertexCountParam.Create;
+begin
+  FName := 'Vertex count';
+  FVertexCount := 3;
+end;
+
+function TVertexCountParam.ToControl(AParentPanel: TPanel): TControl;
+begin
+  Result := TSpinEdit.Create(AParentPanel);
+  with Result as TSpinEdit do
+  begin
+    Parent := AParentPanel;
+    MinValue := 3;
+    MaxValue := 50;
+    Value := Self.Value;
+    OnChange := @OnChangeControl;
+  end;
+end;
 
 { TRoundRadiusYParam }
 

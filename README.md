@@ -12,7 +12,8 @@ Or just use Telegram: my nickname is \@autist.
 1. Pencil (done)
 2. Simple tools (done)
 3. Zooming and moving a canvas (done)
-4. Rounded rectangle tool
+4. Rounded rectangle tool (done)
+5. Polygon tool (done)
 - others coming soon 
 
 ## TODO list:
