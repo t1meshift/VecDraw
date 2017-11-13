@@ -89,8 +89,14 @@ procedure CalculateWorldBorders;
 var
   i: TFigure;
 begin
-  WorldTopLeft := DoublePoint(0, 0);
-  WorldBottomRight := WorldTopLeft;
+  if (Length(CanvasItems) < 1) then
+  begin
+    WorldTopLeft := DoublePoint(0, 0);
+    WorldBottomRight := WorldTopLeft;
+    exit;
+  end;
+  WorldTopLeft := CanvasItems[0].TopLeftBorder;
+  WorldBottomRight := CanvasItems[0].BottomRightBorder;
   for i in CanvasItems do
   begin
     WorldTopLeft.x := Min(WorldTopLeft.x, i.TopLeftBorder.x);
