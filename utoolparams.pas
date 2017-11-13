@@ -12,6 +12,7 @@ uses
  - class for int values (SpinEdit)
  - class for color values (TColorButton)
  - class for selectable values (ComboBox)
+ - class for booleans (CheckBox)
 }
 type
   TToolParam = class
@@ -19,7 +20,7 @@ type
       FName: string;
       procedure OnChangeControl(Sender: TObject); virtual; abstract;
     public
-      //Disabled: boolean; TODO
+      //Disabled: boolean; //TODO
       property Name: string read FName;
       function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
   end;

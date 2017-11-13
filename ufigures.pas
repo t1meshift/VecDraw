@@ -152,8 +152,6 @@ begin
     WorldPos.x - StartPoint.x);
   Radius := sqrt(sqr(WorldPos.x - StartPoint.x)
     + sqr(WorldPos.y - StartPoint.y));
-  Vertexes[0].x := StartPoint.x + Radius*cos(CurrentRotation);
-  Vertexes[0].y := StartPoint.y + Radius*sin(CurrentRotation);
   for i := Low(Vertexes) to High(Vertexes) do
   begin
     Vertexes[i].x := StartPoint.x + Radius*cos(CurrentRotation

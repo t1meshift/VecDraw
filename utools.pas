@@ -8,10 +8,6 @@ uses
   Classes, SysUtils, Controls, UFigures, UToolParams, UTransform, Graphics,
   Math;
 
-{
- TODO:
- - abstract class for Fillable figures
-}
 type
   TTool = class
     private
@@ -32,6 +28,33 @@ type
   TToolList = array of TTool;
   TToolClassList = array of TToolClass;
 
+  { TDrawableTool }
+
+  TDrawableTool = class(TTool)
+    private
+      FLineWidth: TLineWidthParam;
+      FLineColor: TLineColorParam;
+      FLineStyle: TLineStyleParam;
+    public
+      constructor Create; override;
+      destructor Destroy; override;
+      procedure MouseMove(X, Y: integer); override;
+      procedure MouseUp(X, Y: integer); override;
+      function GetParams: TToolParamList; override;
+  end;
+
+  { TFillableTool }
+
+  TFillableTool = class(TDrawableTool)
+    private
+      FFillColor: TFillColorParam;
+      FFillStyle: TFillStyleParam;
+    public
+      constructor Create; override;
+      destructor Destroy; override;
+      function GetParams: TToolParamList; override;
+  end;
+
   { THandTool }
 
   THandTool = class(TTool)
@@ -47,23 +70,13 @@ type
 
   { TPolylineTool }
 
-  TPolylineTool = class(TTool)
-    private
-      FLineWidth: TLineWidthParam;
-      FLineColor: TLineColorParam;
-      FLineStyle: TLineStyleParam;
-    public
-      constructor Create; override;
-      destructor Destroy; override;
-      function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
-      procedure MouseMove(X, Y: integer); override;
-      procedure MouseUp(X, Y: integer); override;
-      function GetParams: TToolParamList; override;
+  TPolylineTool = class(TDrawableTool)
+    function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
   end;
 
   { TLineTool }
 
-  TLineTool = class(TPolylineTool)
+  TLineTool = class(TDrawableTool)
     function MouseDown(X, Y: integer; Button: TMouseButton): TFigure; override;
   end;
 
@@ -82,31 +95,19 @@ type
 
   { TRectangleTool }
 
-  TRectangleTool = class(TTool)
-    private
-      FLineWidth: TLineWidthParam;
-      FLineColor: TLineColorParam;
-      FLineStyle: TLineStyleParam;
-      FFillColor: TFillColorParam;
-      FFillStyle: TFillStyleParam;
-    public
-      constructor Create; override;
-      destructor Destroy; override;
-      function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
-      procedure MouseMove(X, Y: integer); override;
-      procedure MouseUp(X, Y: integer); override;
-      function GetParams: TToolParamList; override;
+  TRectangleTool = class(TFillableTool)
+    function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
   end;
 
   { TEllipseTool }
 
-  TEllipseTool = class(TRectangleTool)
+  TEllipseTool = class(TFillableTool)
     function MouseDown(X, Y: integer; Button: TMouseButton): TFigure; override;
   end;
 
   { TRoundRectTool }
 
-  TRoundRectTool = class(TRectangleTool)
+  TRoundRectTool = class(TFillableTool)
     private
       FRoundRadiusX: TRoundRadiusXParam;
       FRoundRadiusY: TRoundRadiusYParam;
@@ -119,20 +120,13 @@ type
 
   { TPolygonTool }
 
-  TPolygonTool = class(TTool)
+  TPolygonTool = class(TFillableTool)
     private
-      FLineWidth: TLineWidthParam;
-      FLineColor: TLineColorParam;
-      FLineStyle: TLineStyleParam;
-      FFillColor: TFillColorParam;
-      FFillStyle: TFillStyleParam;
       FVertexCount: TVertexCountParam;
     public
       constructor Create; override;
       destructor Destroy; override;
       function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
-      procedure MouseMove(X, Y: integer); override;
-      procedure MouseUp(X, Y: integer); override;
       function GetParams: TToolParamList; override;
   end;
 
@@ -141,28 +135,76 @@ var
 
 implementation
 
-{ TPolygonTool }
+{ TFillableTool }
 
-constructor TPolygonTool.Create;
+constructor TFillableTool.Create;
+begin
+  inherited Create;
+  FFillColor := TFillColorParam.Create;
+  FFillStyle := TFillStyleParam.Create;
+end;
+
+destructor TFillableTool.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(FFillStyle);
+  FreeAndNil(FFillColor);
+end;
+
+function TFillableTool.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(FLineWidth, FLineStyle, FLineColor,
+    FFillStyle, FFillColor);
+end;
+
+{ TDrawableTool }
+
+constructor TDrawableTool.Create;
 begin
   FFigureDestroyed := false;
   FFigure := nil;
   FLineWidth := TLineWidthParam.Create;
   FLineColor := TLineColorParam.Create;
   FLineStyle := TLineStyleParam.Create;
-  FFillColor := TFillColorParam.Create;
-  FFillStyle := TFillStyleParam.Create;
+end;
+
+destructor TDrawableTool.Destroy;
+begin
+  inherited Destroy;
+  //they aren't being destroyed without this. is it a bug or a feature?
+  FreeAndNil(FLineWidth);
+  FreeAndNil(FLineColor);
+  FreeAndNil(FLineStyle);
+end;
+
+procedure TDrawableTool.MouseMove(X, Y: integer);
+begin
+  if FFigure <> nil then
+    FFigure.MouseMove(X, Y);
+end;
+
+procedure TDrawableTool.MouseUp(X, Y: integer);
+begin
+  FFigure := nil;
+end;
+
+function TDrawableTool.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(FLineWidth, FLineStyle, FLineColor);
+end;
+
+
+{ TPolygonTool }
+
+constructor TPolygonTool.Create;
+begin
+  inherited Create;
   FVertexCount := TVertexCountParam.Create;
 end;
 
 destructor TPolygonTool.Destroy;
 begin
   inherited Destroy;
-  FreeAndNil(FLineWidth);
-  FreeAndNil(FLineColor);
-  FreeAndNil(FLineStyle);
-  FreeAndNil(FFillStyle);
-  FreeAndNil(FFillColor);
   FreeAndNil(FVertexCount);
 end;
 
@@ -180,21 +222,10 @@ begin
   Result := FFigure;
 end;
 
-procedure TPolygonTool.MouseMove(X, Y: integer);
-begin
-  if FFigure <> nil then
-    FFigure.MouseMove(X, Y);
-end;
-
-procedure TPolygonTool.MouseUp(X, Y: integer);
-begin
-  FFigure := nil;
-end;
-
 function TPolygonTool.GetParams: TToolParamList;
 begin
-  Result := TToolParamList.Create(FFillColor, FFillStyle, FLineColor,
-     FLineStyle, FLineWidth, FVertexCount);
+  Result := TToolParamList.Create(FVertexCount, FLineWidth, FLineStyle,
+    FLineColor, FFillStyle, FFillColor);
 end;
 
 { TRoundRectTool }
@@ -229,8 +260,8 @@ end;
 
 function TRoundRectTool.GetParams: TToolParamList;
 begin
-  Result := TToolParamList.Create(FFillColor, FFillStyle, FLineColor,
-     FRoundRadiusY, FRoundRadiusX, FLineStyle, FLineWidth);
+  Result := TToolParamList.Create(FLineWidth, FLineStyle, FRoundRadiusX, FRoundRadiusY,
+    FLineColor, FFillStyle, FFillColor);
 end;
 
 { TEllipseTool }
@@ -250,28 +281,6 @@ end;
 
 { TRectangleTool }
 
-constructor TRectangleTool.Create;
-begin
-  FFigureDestroyed := false;
-  FFigure := nil;
-  FLineWidth := TLineWidthParam.Create;
-  FLineColor := TLineColorParam.Create;
-  FLineStyle := TLineStyleParam.Create;
-  FFillColor := TFillColorParam.Create;
-  FFillStyle := TFillStyleParam.Create;
-end;
-
-destructor TRectangleTool.Destroy;
-begin
-  inherited Destroy;
-  //they aren't being destroyed without this. is it a bug or a feature?
-  FreeAndNil(FLineWidth);
-  FreeAndNil(FLineColor);
-  FreeAndNil(FLineStyle);
-  FreeAndNil(FFillStyle);
-  FreeAndNil(FFillColor);
-end;
-
 function TRectangleTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
@@ -283,23 +292,6 @@ begin
       FLineColor.Value, FLineStyle.Value, FFillColor.Value, FFillStyle.Value);
   end;
   Result := FFigure;
-end;
-
-procedure TRectangleTool.MouseMove(X, Y: integer);
-begin
-  if FFigure <> nil then
-    FFigure.MouseMove(X, Y);
-end;
-
-procedure TRectangleTool.MouseUp(X, Y: integer);
-begin
-  FFigure := nil;
-end;
-
-function TRectangleTool.GetParams: TToolParamList;
-begin
-   Result := TToolParamList.Create(FFillColor, FFillStyle, FLineColor,
-     FLineStyle, FLineWidth);
 end;
 
 { TMagnifierTool }
@@ -365,11 +357,11 @@ begin
   end;
   FFigure := nil;
   FFigureDestroyed := true;
+  FMButton := mbExtra2;
 end;
 
 function TMagnifierTool.GetParams: TToolParamList;
 begin
-  FMButton := mbExtra2;
   Result := nil;
 end;
 
@@ -427,24 +419,6 @@ end;
 
 { TPolylineTool }
 
-constructor TPolylineTool.Create;
-begin
-  FFigureDestroyed := false;
-  FFigure := nil;
-  FLineWidth := TLineWidthParam.Create;
-  FLineColor := TLineColorParam.Create;
-  FLineStyle := TLineStyleParam.Create;
-end;
-
-destructor TPolylineTool.Destroy;
-begin
-  inherited Destroy;
-  //they aren't being destroyed without this. is it a bug or a feature?
-  FreeAndNil(FLineWidth);
-  FreeAndNil(FLineColor);
-  FreeAndNil(FLineStyle);
-end;
-
 function TPolylineTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
@@ -456,22 +430,6 @@ begin
       FLineColor.Value, FLineStyle.Value);
   end;
   Result := FFigure;
-end;
-
-procedure TPolylineTool.MouseMove(X, Y: integer);
-begin
-  if FFigure <> nil then
-    FFigure.MouseMove(X, Y);
-end;
-
-procedure TPolylineTool.MouseUp(X, Y: integer);
-begin
-  FFigure := nil;
-end;
-
-function TPolylineTool.GetParams: TToolParamList;
-begin
-  Result := TToolParamList.Create(FLineColor, FLineStyle, FLineWidth);
 end;
 
 initialization
