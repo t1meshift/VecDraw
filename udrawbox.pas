@@ -257,7 +257,8 @@ end;
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
 var
   b: TSpeedButton;
-  i: TToolParam;
+  CurrParam: TToolParam;
+  i: integer;
   l: TLabel;
   c: TControl;
   ParamsList: TToolParamList;
@@ -270,15 +271,16 @@ begin
   ParamsList := CurrentTool.GetParams;
   if ParamsList <> nil then
   begin
-    for i in ParamsList do
+    for i := High(ParamsList) downto Low(ParamsList) do
     begin
+      CurrParam := ParamsList[i];
       ToolParamsPanel.Visible := false;
-      c := i.ToControl(ToolParamsPanel);
+      c := CurrParam.ToControl(ToolParamsPanel);
       c.Align := alBottom;
 
       l := TLabel.Create(ToolParamsPanel);
       l.Parent := ToolParamsPanel;
-      l.Caption := i.Name;
+      l.Caption := CurrParam.Name;
       l.Align := alBottom;
       ToolParamsPanel.Visible := true;
     end;
