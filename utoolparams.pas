@@ -5,7 +5,7 @@ unit UToolParams;
 interface
 
 uses
-  Classes, SysUtils, Controls, Graphics, ExtCtrls, Buttons, Dialogs, Spin,
+  Classes, SysUtils, Controls, Graphics, ExtCtrls, Dialogs, Spin,
   StdCtrls;
 
 type
@@ -14,6 +14,7 @@ type
       FName: string;
       procedure OnChangeControl(Sender: TObject); virtual; abstract;
     public
+      //Disabled: boolean; TODO
       property Name: string read FName;
       function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
   end;

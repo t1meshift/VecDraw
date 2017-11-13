@@ -15,6 +15,7 @@ type
 
   TDrawForm = class(TForm)
     CanvasPropsPanel: TPanel;
+    PercentSignLabel: TLabel;
     ToolParamsPanel: TPanel;
     ScaleFloatSpin: TFloatSpinEdit;
     ScaleLabel: TLabel;
@@ -68,7 +69,7 @@ type
 
 const
   TOOL_BUTTON_SIZE: integer = 32;
-  TOOL_BUTTON_MARGIN: integer = 4;
+  TOOL_BUTTON_MARGIN: integer = 5;
   TOOL_BUTTON_PADDING: integer = 1;
   CANVAS_OFFSET_BORDER_SIZE: integer = 10;
 
@@ -137,6 +138,9 @@ begin
   CanvasWidth := MainPaintBox.Width;
   CanvasHeight := MainPaintBox.Height;
 
+  WorldTopLeft := DoublePoint(0, 0);
+  WorldBottomRight := DoublePoint(0, 0);
+
   SetScrollBars;
 end;
 
@@ -158,8 +162,9 @@ begin
   if (WorldTopLeft.x <> WorldBottomRight.x) and
     (WorldTopLeft.y <> WorldBottomRight.y) then
   begin
-    NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x),
-      CanvasHeight / (WorldBottomRight.y - WorldTopLeft.y));
+    NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x
+      + 2 * CANVAS_OFFSET_BORDER_SIZE), CanvasHeight / (WorldBottomRight.y
+      - WorldTopLeft.y + 2 * CANVAS_OFFSET_BORDER_SIZE));
     ZoomPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
       (WorldBottomRight.y + WorldTopLeft.y)/2), NewScale);
     SetScrollBars;
@@ -242,6 +247,7 @@ begin
   begin
     for i in ParamsList do
     begin
+      ToolParamsPanel.Visible := false;
       c := i.ToControl(ToolParamsPanel);
       c.Align := alBottom;
 
@@ -249,6 +255,7 @@ begin
       l.Parent := ToolParamsPanel;
       l.Caption := i.Name;
       l.Align := alBottom;
+      ToolParamsPanel.Visible := true;
     end;
   end;
 end;

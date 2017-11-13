@@ -150,7 +150,7 @@ end;
 
 function TRoundRectTool.GetParams: TToolParamList;
 begin
-  Result := TToolParamList.Create(FFillStyle, FFillColor, FLineColor,
+  Result := TToolParamList.Create(FFillColor, FFillStyle, FLineColor,
      FRoundRadiusY, FRoundRadiusX, FLineStyle, FLineWidth);
 end;
 
@@ -219,7 +219,7 @@ end;
 
 function TRectangleTool.GetParams: TToolParamList;
 begin
-   Result := TToolParamList.Create(FFillStyle, FFillColor, FLineColor,
+   Result := TToolParamList.Create(FFillColor, FFillStyle, FLineColor,
      FLineStyle, FLineWidth);
 end;
 

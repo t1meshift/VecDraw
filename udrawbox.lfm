@@ -1,21 +1,23 @@
 object DrawForm: TDrawForm
   Left = 204
-  Height = 639
-  Top = 43
-  Width = 1008
+  Height = 654
+  Top = 27
+  Width = 1055
   Caption = 'DrawForm'
-  ClientHeight = 619
-  ClientWidth = 1008
+  ClientHeight = 634
+  ClientWidth = 1055
   Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
   Position = poScreenCenter
   LCLVersion = '1.6.4.0'
   object MainPaintBox: TPaintBox
+    AnchorSideTop.Control = Owner
+    Cursor = crCross
     Left = 120
-    Height = 584
+    Height = 599
     Top = 0
-    Width = 856
+    Width = 903
     Anchors = [akTop, akLeft, akRight, akBottom]
     OnMouseDown = MainPaintBoxMouseDown
     OnMouseMove = MainPaintBoxMouseMove
@@ -46,8 +48,8 @@ object DrawForm: TDrawForm
     AnchorSideBottom.Side = asrBottom
     Left = 120
     Height = 35
-    Top = 584
-    Width = 856
+    Top = 599
+    Width = 903
     Anchors = [akTop, akLeft, akRight, akBottom]
     PageSize = 0
     TabOrder = 1
@@ -61,8 +63,8 @@ object DrawForm: TDrawForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = MainPaintBox
     AnchorSideBottom.Side = asrBottom
-    Left = 976
-    Height = 584
+    Left = 1023
+    Height = 599
     Top = 0
     Width = 32
     Anchors = [akTop, akLeft, akRight, akBottom]
@@ -79,7 +81,7 @@ object DrawForm: TDrawForm
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
     Left = 2
-    Height = 607
+    Height = 622
     Top = 10
     Width = 116
     Anchors = [akTop, akLeft, akRight, akBottom]
@@ -87,20 +89,21 @@ object DrawForm: TDrawForm
     BorderSpacing.Top = 8
     BorderSpacing.Around = 2
     BevelOuter = bvNone
-    ClientHeight = 607
+    ClientHeight = 622
     ClientWidth = 116
     TabOrder = 3
     object ScaleFloatSpin: TFloatSpinEdit
       AnchorSideLeft.Control = CanvasPropsPanel
       AnchorSideTop.Control = ScaleLabel
       AnchorSideTop.Side = asrBottom
-      AnchorSideRight.Control = CanvasPropsPanel
-      AnchorSideRight.Side = asrBottom
+      AnchorSideRight.Control = PercentSignLabel
       Left = 0
       Height = 23
       Top = 17
-      Width = 116
+      Width = 98
+      Alignment = taRightJustify
       Anchors = [akTop, akLeft, akRight]
+      AutoSize = False
       BorderSpacing.Top = 2
       Increment = 1
       MaxValue = 100
@@ -123,13 +126,42 @@ object DrawForm: TDrawForm
       ParentColor = False
     end
     object ToolParamsPanel: TPanel
+      AnchorSideLeft.Control = CanvasPropsPanel
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = CanvasPropsPanel
+      AnchorSideBottom.Side = asrBottom
       Left = 0
-      Height = 562
-      Top = 40
-      Width = 114
+      Height = 573
+      Top = 48
+      Width = 116
+      Alignment = taLeftJustify
       Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Bottom = 1
+      BevelInner = bvSpace
       BevelOuter = bvLowered
       TabOrder = 1
+    end
+    object PercentSignLabel: TLabel
+      AnchorSideLeft.Control = ScaleFloatSpin
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = ScaleLabel
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = CanvasPropsPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = ToolParamsPanel
+      Left = 98
+      Height = 33
+      Top = 15
+      Width = 18
+      Alignment = taCenter
+      Anchors = [akTop, akRight, akBottom]
+      AutoSize = False
+      Caption = '%'
+      Font.Height = 27
+      ParentColor = False
+      ParentFont = False
+      OptimalFill = True
     end
   end
   object MainMenu: TMainMenu
