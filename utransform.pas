@@ -21,6 +21,7 @@ function WorldToCanvas(ADoublePoint: TDoublePoint): TPoint;
 
 procedure SetScale(AScale: double);
 procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
+procedure CenterToPoint(APoint: TDoublePoint);
 
 const
   ZOOM_MIN = 0.01;
@@ -83,17 +84,24 @@ end;
 procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
 var
   PrevScale: double;
-  CanvasCorner: TDoublePoint;
 begin
   PrevScale := Scale;
   SetScale(AScale);
   if Scale = PrevScale then
     exit;
+  CenterToPoint(APoint);
+end;
 
+procedure CenterToPoint(APoint: TDoublePoint);
+var
+  CanvasCorner: TDoublePoint;
+begin
   CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
   CanvasOffset.x := APoint.x - (CanvasCorner.x - CanvasOffset.x) / 2;
   CanvasOffset.y := APoint.y - (CanvasCorner.y - CanvasOffset.y) / 2;
 end;
+
+
 
 initialization
 

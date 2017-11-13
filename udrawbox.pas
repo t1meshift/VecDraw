@@ -67,6 +67,8 @@ type
     { public declarations }
   end;
 
+procedure CalculateWorldBorders;
+
 const
   TOOL_BUTTON_SIZE: integer = 32;
   TOOL_BUTTON_MARGIN: integer = 5;
@@ -82,6 +84,21 @@ var
   WorldTopLeft, WorldBottomRight: TDoublePoint;
 
 implementation
+
+procedure CalculateWorldBorders;
+var
+  i: TFigure;
+begin
+  WorldTopLeft := DoublePoint(0, 0);
+  WorldBottomRight := WorldTopLeft;
+  for i in CanvasItems do
+  begin
+    WorldTopLeft.x := Min(WorldTopLeft.x, i.TopLeftBorder.x);
+    WorldTopLeft.y := Min(WorldTopLeft.y, i.TopLeftBorder.y);
+    WorldBottomRight.x := Max(WorldBottomRight.x, i.BottomRightBorder.x);
+    WorldBottomRight.y := Max(WorldBottomRight.y, i.BottomRightBorder.y);
+  end;
+end;
 
 {$R *.lfm}
 
@@ -159,14 +176,16 @@ procedure TDrawForm.ShowAllMenuItemClick(Sender: TObject);
 var
   NewScale: double;
 begin
+  CalculateWorldBorders;
   if (WorldTopLeft.x <> WorldBottomRight.x) and
     (WorldTopLeft.y <> WorldBottomRight.y) then
   begin
     NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x
       + 2 * CANVAS_OFFSET_BORDER_SIZE), CanvasHeight / (WorldBottomRight.y
       - WorldTopLeft.y + 2 * CANVAS_OFFSET_BORDER_SIZE));
-    ZoomPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
-      (WorldBottomRight.y + WorldTopLeft.y)/2), NewScale);
+    SetScale(NewScale);
+    CenterToPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
+      (WorldBottomRight.y + WorldTopLeft.y)/2));
     SetScrollBars;
     MainPaintBox.Invalidate;
   end;
@@ -315,14 +334,9 @@ begin
     Brush.Color := clWhite;
     FillRect(0, 0, MainPaintBox.Width, MainPaintBox.Height);
   end;
+  CalculateWorldBorders;
   for i in CanvasItems do
-  begin
-    WorldTopLeft.x := Min(WorldTopLeft.x, i.TopLeftBorder.x);
-    WorldTopLeft.y := Min(WorldTopLeft.y, i.TopLeftBorder.y);
-    WorldBottomRight.x := Max(WorldBottomRight.x, i.BottomRightBorder.x);
-    WorldBottomRight.y := Max(WorldBottomRight.y, i.BottomRightBorder.y);
     i.Draw(MainPaintBox.Canvas);
-  end;
 end;
 
 procedure TDrawForm.UndoActionExecute(Sender: TObject);
