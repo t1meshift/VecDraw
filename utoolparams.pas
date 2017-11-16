@@ -216,7 +216,7 @@ end;
 constructor TFillStyleParam.Create;
 begin
   FName := 'Fill style';
-  FFillIndex := 1;
+  FFillIndex := 0;
 end;
 
 function TFillStyleParam.ToControl(AParentPanel: TPanel): TControl;

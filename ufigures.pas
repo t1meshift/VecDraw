@@ -149,8 +149,7 @@ begin
   WorldPos := CanvasToWorld(X, Y);
   CurrentRotation := arctan2(WorldPos.y - StartPoint.y,
     WorldPos.x - StartPoint.x);
-  Radius := sqrt(sqr(WorldPos.x - StartPoint.x)
-    + sqr(WorldPos.y - StartPoint.y));
+  Radius := Dist(StartPoint, WorldPos);
   for i := Low(Vertexes) to High(Vertexes) do
   begin
     Vertexes[i].x := StartPoint.x + Radius*cos(CurrentRotation
@@ -255,8 +254,7 @@ begin
   TopLeft := WorldToCanvas(Vertexes[0]);
   BottomRight := WorldToCanvas(Vertexes[1]);
 
-  if sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) >= eps*eps
-  then
+  if Dist(TopLeft, BottomRight) >= eps then
   begin
     with ACanvas do
     begin

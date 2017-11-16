@@ -88,12 +88,21 @@ procedure CalculateWorldBorders;
 var
   i: TFigure;
 begin
-  if (Length(CanvasItems) < 1) then
+  if Length(CanvasItems) < 1 then
   begin
-    WorldTopLeft := DoublePoint(0, 0);
-    WorldBottomRight := WorldTopLeft;
+    if (CurrentTool <> nil) and (CurrentTool.Figure <> nil) then
+    begin
+      WorldTopLeft := CurrentTool.Figure.TopLeftBorder;
+      WorldBottomRight := CurrentTool.Figure.BottomRightBorder;
+    end
+    else
+    begin
+      WorldTopLeft := DoublePoint(0, 0);
+      WorldBottomRight := WorldTopLeft;
+    end;
     exit;
   end;
+
   WorldTopLeft := CanvasItems[0].TopLeftBorder;
   WorldBottomRight := CanvasItems[0].BottomRightBorder;
   for i in CanvasItems do
@@ -103,6 +112,14 @@ begin
     WorldBottomRight.x := Max(WorldBottomRight.x, i.BottomRightBorder.x);
     WorldBottomRight.y := Max(WorldBottomRight.y, i.BottomRightBorder.y);
   end;
+  if CurrentTool.Figure <> nil then
+    with CurrentTool.Figure do
+    begin
+      WorldTopLeft.x := Min(WorldTopLeft.x, TopLeftBorder.x);
+      WorldTopLeft.y := Min(WorldTopLeft.y, TopLeftBorder.y);
+      WorldBottomRight.x := Max(WorldBottomRight.x, BottomRightBorder.x);
+      WorldBottomRight.y := Max(WorldBottomRight.y, BottomRightBorder.y);
+    end;
 end;
 
 {$R *.lfm}
@@ -178,9 +195,8 @@ begin
   if (WorldTopLeft.x <> WorldBottomRight.x) and
     (WorldTopLeft.y <> WorldBottomRight.y) then
   begin
-    NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x
-      + 2 * CANVAS_OFFSET_BORDER_SIZE / Scale), CanvasHeight / (WorldBottomRight.y
-      - WorldTopLeft.y + 2 * CANVAS_OFFSET_BORDER_SIZE / Scale));
+    NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x + 2),
+      CanvasHeight / (WorldBottomRight.y - WorldTopLeft.y + 2));
     SetScale(NewScale);
     CenterToPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
       (WorldBottomRight.y + WorldTopLeft.y)/2));
@@ -205,18 +221,15 @@ begin
   VerMax := Round(Max(CanvasCorner.y + CANVAS_OFFSET_BORDER_SIZE / Scale,
     CanvasHeight + CANVAS_OFFSET_BORDER_SIZE / Scale));
 
-  if Length(CanvasItems) > 0 then
-  begin
-    CalculateWorldBorders;
-    HorMin := Min(HorMin, Round(WorldTopLeft.x - CANVAS_OFFSET_BORDER_SIZE
-      / Scale));
-    VerMin := Min(VerMin, Round(WorldTopLeft.y - CANVAS_OFFSET_BORDER_SIZE
-      / Scale));
-    HorMax := Max(HorMax, Round(WorldBottomRight.x + CANVAS_OFFSET_BORDER_SIZE
-      / Scale));
-    VerMax := Max(VerMax, Round(WorldBottomRight.y + CANVAS_OFFSET_BORDER_SIZE
-      / Scale));
-  end;
+  CalculateWorldBorders;
+  HorMin := Min(HorMin, Round(WorldTopLeft.x - CANVAS_OFFSET_BORDER_SIZE
+    / Scale));
+  VerMin := Min(VerMin, Round(WorldTopLeft.y - CANVAS_OFFSET_BORDER_SIZE
+    / Scale));
+  HorMax := Max(HorMax, Round(WorldBottomRight.x + CANVAS_OFFSET_BORDER_SIZE
+    / Scale));
+  VerMax := Max(VerMax, Round(WorldBottomRight.y + CANVAS_OFFSET_BORDER_SIZE
+    / Scale));
 
   HorizontalScrollBar.SetParams(Round(CanvasOffset.x), HorMin, HorMax,
     Round(CanvasWidth / Scale));
@@ -281,13 +294,10 @@ procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
   IsDrawing := true;
-  SetLength(CanvasItems, Length(CanvasItems) + 1);
-  CanvasItems[High(CanvasItems)] := CurrentTool.MouseDown(X, Y, Button);
-  if CanvasItems[High(CanvasItems)] = nil then
-  begin
-    SetLength(CanvasItems, Length(CanvasItems) - 1);
+  CurrentTool.MouseDown(X, Y, Button);
+  if CurrentTool.Figure = nil then
     IsDrawing := false;
-  end;
+
   MainPaintBox.Invalidate;
   SetScrollBars;
 end;
@@ -305,10 +315,10 @@ procedure TDrawForm.MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
 var
   i: integer;
 begin
-  CurrentTool.MouseUp(X, Y);
-  if CurrentTool.FigureDestroyed then
+  SetLength(CanvasItems, Length(CanvasItems) + 1);
+  CanvasItems[High(CanvasItems)] := CurrentTool.MouseUp(X, Y);
+  if CanvasItems[High(CanvasItems)] = nil then
   begin
-    FreeAndNil(CanvasItems[High(CanvasItems)]);
     SetLength(CanvasItems, Max(Length(CanvasItems) - 1, 0));
     IsDrawing := false;
   end;
@@ -328,19 +338,25 @@ var
   WorldZeroTL, WorldZeroBR: TPoint;
 begin
   ScaleFloatSpin.Value := Scale * 100;
-  WorldZeroTL := WorldToCanvas(0,0);
-  WorldZeroBR := WorldToCanvas(CanvasWidth, CanvasHeight);
   with MainPaintBox.Canvas do
   begin
     Brush.Color := clWhite;
     FillRect(0, 0, MainPaintBox.Width, MainPaintBox.Height);
+    {$ifdef DEBUG}
+    //show start field position
     Pen.Color := clBlack;
     Pen.Style := psSolid;
+    Pen.Width := 1;
+    WorldZeroTL := WorldToCanvas(0,0);
+    WorldZeroBR := WorldToCanvas(CanvasWidth, CanvasHeight);
     Rectangle(WorldZeroTL.x, WorldZeroTL.y, WorldZeroBR.x, WorldZeroBR.y);
+    {$endif}
   end;
   CalculateWorldBorders;
   for i in CanvasItems do
     i.Draw(MainPaintBox.Canvas);
+  if (CurrentTool <> nil) and (CurrentTool.Figure <> nil) then
+    CurrentTool.Figure.Draw(MainPaintBox.Canvas);
 end;
 
 procedure TDrawForm.UndoActionExecute(Sender: TObject);
@@ -403,10 +419,13 @@ procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 var
   i: integer;
 begin
-  ClearAllMenuItemClick(nil);
+  CurrentTool := nil;
   for i := Low(ToolsBase) to High(ToolsBase) do
-    FreeAndNil(ToolsBase[i]);
+    if ToolsBase[i] <> nil then
+      FreeAndNil(ToolsBase[i]);
   SetLength(ToolsBase, 0);
+
+  ClearAllMenuItemClick(nil);
   ToolParamsPanel.DestroyComponents;
 end;
 
