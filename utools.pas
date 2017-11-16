@@ -250,16 +250,16 @@ end;
 procedure TPolygonTool.MouseMove(X, Y: integer; Shift: TShiftState);
 var
   Diff: TPoint;
-  MaxDist: integer;
+  MinDist: integer;
   DistSign: TValueSign;
 begin
   if FFigure <> nil then
   begin
     Diff := Point(X - FStartPoint.x, Y - FStartPoint.y);
-    MaxDist := Min(abs(Diff.x), abs(Diff.y));
+    MinDist := Min(abs(Diff.x), abs(Diff.y));
     DistSign := Sign(Max(Diff.x, Diff.y));
     if ssShift in Shift then
-      FFigure.MouseMove(FStartPoint.x, FStartPoint.y - MaxDist*DistSign)
+      FFigure.MouseMove(FStartPoint.x, FStartPoint.y - MinDist*DistSign)
     else
       FFigure.MouseMove(X, Y);
   end;
