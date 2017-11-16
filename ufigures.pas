@@ -22,7 +22,6 @@ type
       LineStyle: TPenStyle;
       FillStyle: TBrushStyle;
       function FTopLeft: TDoublePoint;
-
       function FBottomRight: TDoublePoint;
       procedure SetCanvasStyles(ACanvas: TCanvas);
     public

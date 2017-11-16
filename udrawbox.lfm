@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 204
+  Left = 147
   Height = 654
-  Top = 27
+  Top = 22
   Width = 1055
   Caption = 'DrawForm'
   ClientHeight = 634
@@ -137,6 +137,7 @@ object DrawForm: TDrawForm
       Width = 116
       Alignment = taLeftJustify
       Anchors = [akTop, akLeft, akRight, akBottom]
+      AutoSize = True
       BorderSpacing.Bottom = 1
       BevelInner = bvSpace
       BevelOuter = bvLowered

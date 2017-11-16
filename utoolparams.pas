@@ -7,47 +7,54 @@ interface
 uses
   Classes, SysUtils, Controls, Graphics, ExtCtrls, Dialogs, Spin,
   StdCtrls;
-{
- TODO:
- - class for int values (SpinEdit)
- - class for color values (TColorButton)
- - class for selectable values (ComboBox)
- - class for booleans (CheckBox)
-}
+
 type
   TToolParam = class
     private
       FName: string;
       procedure OnChangeControl(Sender: TObject); virtual; abstract;
     public
-      //Disabled: boolean; //TODO
       property Name: string read FName;
       function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
   end;
   TToolParamList = array of TToolParam;
 
-  { TLineColorParam }
+  { TIntegerParam }
 
-  TLineColorParam = class(TToolParam)
+  TIntegerParam = class(TToolParam)
     private
-      FLineColor: TColor;
+      FMinValue, FMaxValue: integer;
+      FValue: integer;
+      procedure FSetValue(AValue: integer);
       procedure OnChangeControl(Sender: TObject); override;
     public
-      property Value: TColor read FLineColor;
-      constructor Create;
+      constructor Create(AParamName: string; AMinValue, AMaxValue,
+        ADefaultValue: integer);
+      property Value: integer read FValue write FSetValue;
       function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
-  { TLineWidthParam }
+  { TColorParam }
 
-  TLineWidthParam = class(TToolParam)
+  TColorParam = class(TToolParam)
     private
-      FLineWidth: integer;
-      procedure FSetWidth(ALineWidth: integer);
+      FValue: TColor;
       procedure OnChangeControl(Sender: TObject); override;
     public
-      property Value: integer read FLineWidth write FSetWidth;
-      constructor Create;
+      constructor Create(AParamName: string; ADefaultValue: TColor);
+      property Value: TColor read FValue write FValue;
+      function ToControl(AParentPanel: TPanel): TControl; override;
+  end;
+
+  { TBooleanParam }
+
+  TBooleanParam = class(TToolParam)
+    private
+      FValue: boolean;
+      procedure OnChangeControl(Sender: TObject); override;
+    public
+      constructor Create(AParamName: string; ADefaultValue: boolean);
+      property Value: boolean read FValue write FValue;
       function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
@@ -64,18 +71,6 @@ type
         State: TOwnerDrawState);
     public
       property Value: TPenStyle read FGetLineStyle;
-      constructor Create;
-      function ToControl(AParentPanel: TPanel): TControl; override;
-  end;
-
-  { TFillColorParam }
-
-  TFillColorParam = class(TToolParam)
-    private
-      FFillColor: TColor;
-      procedure OnChangeControl(Sender: TObject); override;
-    public
-      property Value: TColor read FFillColor;
       constructor Create;
       function ToControl(AParentPanel: TPanel): TControl; override;
   end;
@@ -97,130 +92,94 @@ type
       function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
-  { TRoundRadiusParam }
-
-  TRoundRadiusParam = class(TToolParam)
-    private
-      FRadius: integer;
-      procedure FSetRadius(ARadius: integer);
-      procedure OnChangeControl(Sender: TObject); override;
-    public
-      property Value: integer read FRadius write FSetRadius;
-      constructor Create;
-      function ToControl(AParentPanel: TPanel): TControl; override;
-  end;
-
-  { TRoundRadiusXParam }
-
-  TRoundRadiusXParam = class(TRoundRadiusParam)
-    constructor Create;
-  end;
-
-  { TRoundRadiusYParam }
-
-  TRoundRadiusYParam = class(TRoundRadiusParam)
-    constructor Create;
-  end;
-
-  { TVertexCountParam }
-
-  TVertexCountParam = class(TToolParam)
-    private
-      FVertexCount: integer;
-      procedure FSetVertexCount(AVertexCount: integer);
-      procedure OnChangeControl(Sender: TObject); override;
-    public
-      property Value: integer read FVertexCount write FSetVertexCount;
-      constructor Create;
-      function ToControl(AParentPanel: TPanel): TControl; override;
-  end;
-
 implementation
 
-{ TVertexCountParam }
+{ TBooleanParam }
 
-procedure TVertexCountParam.FSetVertexCount(AVertexCount: integer);
+procedure TBooleanParam.OnChangeControl(Sender: TObject);
 begin
-  if AVertexCount < 3 then
-    FVertexCount := 3
-  else if AVertexCount > 50 then
-    FVertexCount := 50
-  else
-    FVertexCount := AVertexCount;
+  FValue := (Sender as TCheckBox).Checked;
 end;
 
-procedure TVertexCountParam.OnChangeControl(Sender: TObject);
+constructor TBooleanParam.Create(AParamName: string; ADefaultValue: boolean);
 begin
-  FSetVertexCount((Sender as TSpinEdit).Value);
+  FName := AParamName;
+  FValue := ADefaultValue;
 end;
 
-constructor TVertexCountParam.Create;
+function TBooleanParam.ToControl(AParentPanel: TPanel): TControl;
 begin
-  FName := 'Vertex count';
-  FVertexCount := 3;
-end;
-
-function TVertexCountParam.ToControl(AParentPanel: TPanel): TControl;
-begin
-  Result := TSpinEdit.Create(AParentPanel);
-  with Result as TSpinEdit do
+  Result := TCheckBox.Create(AParentPanel);
+  with Result as TCheckBox do
   begin
     Parent := AParentPanel;
-    MinValue := 3;
-    MaxValue := 50;
-    Value := Self.Value;
-    OnChange := @OnChangeControl;
+    Caption := FName;
+    Checked := FValue;
+    OnClick := @OnChangeControl;
   end;
 end;
 
-{ TRoundRadiusYParam }
+{ TColorParam }
 
-constructor TRoundRadiusYParam.Create;
+procedure TColorParam.OnChangeControl(Sender: TObject);
 begin
-  inherited Create;
-  FName := FName + ' (Y)';
+  FValue := (Sender as TColorButton).ButtonColor;
 end;
 
-{ TRoundRadiusXParam }
-
-constructor TRoundRadiusXParam.Create;
+constructor TColorParam.Create(AParamName: string; ADefaultValue: TColor);
 begin
-  inherited Create;
-  FName := FName + ' (X)';
+  FName := AParamName;
+  FValue := ADefaultValue;
 end;
 
-{ TRoundRadiusParam }
-
-procedure TRoundRadiusParam.FSetRadius(ARadius: integer);
+function TColorParam.ToControl(AParentPanel: TPanel): TControl;
 begin
-  if ARadius < 0 then
-    FRadius := 0
-  else if ARadius > 100 then
-    FRadius := 100
+  Result := TColorButton.Create(AParentPanel);
+  with Result as TColorButton do
+  begin
+    Parent := AParentPanel;
+    ButtonColor := FValue;
+    OnColorChanged := @OnChangeControl;
+  end;
+end;
+
+{ TIntegerParam }
+
+procedure TIntegerParam.FSetValue(AValue: integer);
+begin
+  if AValue < FMinValue then
+    FValue := FMinValue
+  else if AValue > FMaxValue then
+    FValue := FMaxValue
   else
-    FRadius := ARadius;
+    FValue := AValue;
 end;
 
-procedure TRoundRadiusParam.OnChangeControl(Sender: TObject);
+procedure TIntegerParam.OnChangeControl(Sender: TObject);
 begin
-  FSetRadius((Sender as TSpinEdit).Value);
+  FSetValue((Sender as TSpinEdit).Value);
 end;
 
-constructor TRoundRadiusParam.Create;
+constructor TIntegerParam.Create(AParamName: string; AMinValue, AMaxValue,
+  ADefaultValue: integer);
 begin
-  FName := 'Rounding radius';
-  FRadius := 5;
+  if AMinValue > AMaxValue then
+    raise ERangeError.Create('Min > max');
+  FName := AParamName;
+  FMinValue := AMinValue;
+  FMaxValue := AMaxValue;
+  FSetValue(ADefaultValue);
 end;
 
-function TRoundRadiusParam.ToControl(AParentPanel: TPanel): TControl;
+function TIntegerParam.ToControl(AParentPanel: TPanel): TControl;
 begin
   Result := TSpinEdit.Create(AParentPanel);
   with Result as TSpinEdit do
   begin
     Parent := AParentPanel;
-    MinValue := 0;
-    MaxValue := 50;
-    Value := Self.Value;
+    MinValue := FMinValue;
+    MaxValue := FMaxValue;
+    Value := FValue;
     OnChange := @OnChangeControl;
   end;
 end;
@@ -271,7 +230,7 @@ begin
     Parent := AParentPanel;
     Style := csOwnerDrawFixed;
     OnDrawItem := @FDrawItem;
-    OnChange := @OnChangeControl;
+    OnSelect := @OnChangeControl;
     for i in FFillStyles do
     begin
       WriteStr(s, i);
@@ -279,30 +238,6 @@ begin
     end;
     ReadOnly := true;
     ItemIndex := FFillIndex;
-  end;
-end;
-
-{ TFillColorParam }
-
-procedure TFillColorParam.OnChangeControl(Sender: TObject);
-begin
-  FFillColor := (Sender as TColorButton).ButtonColor;
-end;
-
-constructor TFillColorParam.Create;
-begin
-  FName := 'Fill color';
-  FFillColor := clWhite;
-end;
-
-function TFillColorParam.ToControl(AParentPanel: TPanel): TControl;
-begin
-  Result := TColorButton.Create(AParentPanel);
-  with Result as TColorButton do
-  begin
-    Parent := AParentPanel;
-    ButtonColor := FFillColor;
-    OnColorChanged := @OnChangeControl;
   end;
 end;
 
@@ -349,7 +284,7 @@ begin
     Parent := AParentPanel;
     Style := csOwnerDrawFixed;
     OnDrawItem := @FDrawItem;
-    OnChange := @OnChangeControl;
+    OnSelect := @OnChangeControl;
     for i in FLineStyles do
     begin
       WriteStr(s, i);
@@ -357,66 +292,6 @@ begin
     end;
     ReadOnly := true;
     ItemIndex := FLineIndex;
-  end;
-end;
-
-{ TLineWidthParam }
-
-procedure TLineWidthParam.FSetWidth(ALineWidth: integer);
-begin
-  if ALineWidth < 1 then
-    FLineWidth := 1
-  else if ALineWidth > 100 then
-    FLineWidth := 100
-  else
-    FLineWidth := ALineWidth;
-end;
-
-procedure TLineWidthParam.OnChangeControl(Sender: TObject);
-begin
-  FSetWidth((Sender as TSpinEdit).Value);
-end;
-
-constructor TLineWidthParam.Create;
-begin
-  FName := 'Line width';
-  FLineWidth := 1;
-end;
-
-function TLineWidthParam.ToControl(AParentPanel: TPanel): TControl;
-begin
-  Result := TSpinEdit.Create(AParentPanel);
-  with Result as TSpinEdit do
-  begin
-    Parent := AParentPanel;
-    MinValue := 1;
-    MaxValue := 100;
-    Value := Self.Value;
-    OnChange := @OnChangeControl;
-  end;
-end;
-
-{ TLineColorParam }
-
-procedure TLineColorParam.OnChangeControl(Sender: TObject);
-begin
-  FLineColor := (Sender as TColorButton).ButtonColor;
-end;
-
-constructor TLineColorParam.Create;
-begin
-  FName := 'Line color';
-  FLineColor := clBlack;
-end;
-
-function TLineColorParam.ToControl(AParentPanel: TPanel): TControl;
-begin
-  Result := TColorButton.Create(AParentPanel);
-  with Result as TColorButton do
-  begin
-    Parent := AParentPanel;
-    ButtonColor := FLineColor;
-    OnColorChanged := @OnChangeControl;
   end;
 end;
 

@@ -54,7 +54,7 @@ end;
 
 function CanvasToWorld(APoint: TPoint): TDoublePoint;
 begin
-    Result := CanvasToWorld(APoint.x, APoint.y);
+  Result := CanvasToWorld(APoint.x, APoint.y);
 end;
 
 function WorldToCanvas(AX, AY: double): TPoint;
@@ -84,13 +84,18 @@ end;
 procedure ZoomPoint(APoint: TDoublePoint; AScale: double);
 var
   PrevScale: double;
+  ScreenPos: TPoint;
 begin
+  ScreenPos := WorldToCanvas(APoint);
   PrevScale := Scale;
   SetScale(AScale);
   if Scale = PrevScale then
     exit;
-  CenterToPoint(APoint);
+  CanvasOffset.x := APoint.x - (ScreenPos.x / Scale);
+  CanvasOffset.y := APoint.y - (ScreenPos.y / Scale);
 end;
+
+
 
 procedure CenterToPoint(APoint: TDoublePoint);
 var

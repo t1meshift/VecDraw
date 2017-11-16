@@ -9,18 +9,21 @@ uses
   Math;
 
 type
+
+  { TTool }
+
   TTool = class
     private
       FFigure: TFigure;
       FMButton: TMouseButton;
       FFigureDestroyed: boolean;
+      FStartPoint: TPoint;
     public
       constructor Create; virtual; abstract;
       property FigureDestroyed: boolean read FFigureDestroyed;
       property Figure: TFigure read FFigure;
       function MouseDown(X, Y: integer; Button: TMouseButton): TFigure; virtual;
-        abstract;
-      procedure MouseMove(X, Y: integer); virtual; abstract;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); virtual; abstract;
       procedure MouseUp(X, Y: integer); virtual; abstract;
       function GetParams: TToolParamList; virtual; abstract;
   end;
@@ -32,13 +35,13 @@ type
 
   TDrawableTool = class(TTool)
     private
-      FLineWidth: TLineWidthParam;
-      FLineColor: TLineColorParam;
+      FLineWidth: TIntegerParam;
+      FLineColor: TColorParam;
       FLineStyle: TLineStyleParam;
     public
       constructor Create; override;
       destructor Destroy; override;
-      procedure MouseMove(X, Y: integer); override;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
       procedure MouseUp(X, Y: integer); override;
       function GetParams: TToolParamList; override;
   end;
@@ -47,23 +50,22 @@ type
 
   TFillableTool = class(TDrawableTool)
     private
-      FFillColor: TFillColorParam;
+      FFillColor: TColorParam;
       FFillStyle: TFillStyleParam;
     public
       constructor Create; override;
       destructor Destroy; override;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
       function GetParams: TToolParamList; override;
   end;
 
   { THandTool }
 
   THandTool = class(TTool)
-    private
-      FStartPoint: TDoublePoint;
     public
       constructor Create; override;
       function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
-      procedure MouseMove(X, Y: integer); override;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
       procedure MouseUp(X, Y: integer); override;
       function GetParams: TToolParamList; override;
   end;
@@ -83,12 +85,10 @@ type
   { TMagnifierTool }
 
   TMagnifierTool = class(TTool)
-    private
-      FStartPoint: TDoublePoint;
     public
       constructor Create; override;
       function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
-      procedure MouseMove(X, Y: integer); override;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
       procedure MouseUp(X, Y: integer); override;
       function GetParams: TToolParamList; override;
   end;
@@ -109,8 +109,8 @@ type
 
   TRoundRectTool = class(TFillableTool)
     private
-      FRoundRadiusX: TRoundRadiusXParam;
-      FRoundRadiusY: TRoundRadiusYParam;
+      FRoundRadiusX: TIntegerParam;
+      FRoundRadiusY: TIntegerParam;
     public
       constructor Create; override;
       destructor Destroy; override;
@@ -122,25 +122,33 @@ type
 
   TPolygonTool = class(TFillableTool)
     private
-      FVertexCount: TVertexCountParam;
+      FVertexCount: TIntegerParam;
     public
       constructor Create; override;
       destructor Destroy; override;
       function MouseDown(X, Y: integer; Button: TMouseButton):TFigure; override;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
       function GetParams: TToolParamList; override;
   end;
 
 var
-  ToolClassBase: TToolClassList;
+  ToolsBase: TToolList;
 
 implementation
+
+{ TTool }
+
+function TTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
+begin
+  FStartPoint := Point(X, Y);
+end;
 
 { TFillableTool }
 
 constructor TFillableTool.Create;
 begin
   inherited Create;
-  FFillColor := TFillColorParam.Create;
+  FFillColor := TColorParam.Create('Fill color', clWhite);
   FFillStyle := TFillStyleParam.Create;
 end;
 
@@ -149,6 +157,22 @@ begin
   inherited Destroy;
   FreeAndNil(FFillStyle);
   FreeAndNil(FFillColor);
+end;
+
+procedure TFillableTool.MouseMove(X, Y: integer; Shift: TShiftState);
+var
+  Diff: TPoint;
+  MinDist: integer;
+begin
+  if FFigure <> nil then
+  begin
+    Diff := Point(X - FStartPoint.x, Y - FStartPoint.y);
+    MinDist := Min(Diff.x, Diff.y);
+    if ssShift in Shift then
+      FFigure.MouseMove(FStartPoint.x + MinDist, FStartPoint.y + MinDist)
+    else
+      FFigure.MouseMove(X, Y);
+  end;
 end;
 
 function TFillableTool.GetParams: TToolParamList;
@@ -163,8 +187,8 @@ constructor TDrawableTool.Create;
 begin
   FFigureDestroyed := false;
   FFigure := nil;
-  FLineWidth := TLineWidthParam.Create;
-  FLineColor := TLineColorParam.Create;
+  FLineWidth := TIntegerParam.Create('Line width', 1, 100, 1);
+  FLineColor := TColorParam.Create('Line color', clBlack);
   FLineStyle := TLineStyleParam.Create;
 end;
 
@@ -177,7 +201,7 @@ begin
   FreeAndNil(FLineStyle);
 end;
 
-procedure TDrawableTool.MouseMove(X, Y: integer);
+procedure TDrawableTool.MouseMove(X, Y: integer; Shift: TShiftState);
 begin
   if FFigure <> nil then
     FFigure.MouseMove(X, Y);
@@ -199,7 +223,7 @@ end;
 constructor TPolygonTool.Create;
 begin
   inherited Create;
-  FVertexCount := TVertexCountParam.Create;
+  FVertexCount := TIntegerParam.Create('Vertexes count', 3, 50, 3);
 end;
 
 destructor TPolygonTool.Destroy;
@@ -212,6 +236,7 @@ function TPolygonTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
 begin
+  inherited MouseDown(X, Y, Button);
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
@@ -220,6 +245,22 @@ begin
       FVertexCount.Value);
   end;
   Result := FFigure;
+end;
+
+procedure TPolygonTool.MouseMove(X, Y: integer; Shift: TShiftState);
+var
+  Diff: TPoint;
+  MaxDist: integer;
+begin
+  if FFigure <> nil then
+  begin
+    Diff := Point(X - FStartPoint.x, Y - FStartPoint.y);
+    MaxDist := Max(Diff.x, Diff.y);
+    if ssShift in Shift then
+      FFigure.MouseMove(FStartPoint.x, FStartPoint.y - MaxDist)
+    else
+      FFigure.MouseMove(X, Y);
+  end;
 end;
 
 function TPolygonTool.GetParams: TToolParamList;
@@ -233,8 +274,8 @@ end;
 constructor TRoundRectTool.Create;
 begin
   inherited Create;
-  FRoundRadiusX := TRoundRadiusXParam.Create;
-  FRoundRadiusY := TRoundRadiusYParam.Create;
+  FRoundRadiusX := TIntegerParam.Create('Rounding radius (X)', 0, 1000, 30);
+  FRoundRadiusY := TIntegerParam.Create('Rounding radius (Y)', 0, 1000, 30);
 end;
 
 destructor TRoundRectTool.Destroy;
@@ -248,6 +289,7 @@ function TRoundRectTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
 begin
+  inherited MouseDown(X, Y, Button);
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
@@ -260,8 +302,8 @@ end;
 
 function TRoundRectTool.GetParams: TToolParamList;
 begin
-  Result := TToolParamList.Create(FLineWidth, FLineStyle, FRoundRadiusX, FRoundRadiusY,
-    FLineColor, FFillStyle, FFillColor);
+  Result := TToolParamList.Create(FLineWidth, FLineStyle, FRoundRadiusX,
+    FRoundRadiusY, FLineColor, FFillStyle, FFillColor);
 end;
 
 { TEllipseTool }
@@ -270,6 +312,7 @@ function TEllipseTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
 begin
+  inherited MouseDown(X, Y, Button);
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
@@ -285,6 +328,7 @@ function TRectangleTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
 begin
+  inherited MouseDown(X, Y, Button);
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
@@ -304,17 +348,17 @@ end;
 
 function TMagnifierTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 begin
+  inherited MouseDown(X, Y, Button);
   FFigureDestroyed := false;
   FFigure := nil;
   if (Button <> mbLeft) and (Button <> mbRight) then
     exit(nil);
   FMButton := Button;
-  FStartPoint := CanvasToWorld(X, Y);
   FFigure := TMagnifier.Create(FStartPoint.x, FStartPoint.y);
   Result := FFigure;
 end;
 
-procedure TMagnifierTool.MouseMove(X, Y: integer);
+procedure TMagnifierTool.MouseMove(X, Y: integer; Shift: TShiftState);
 begin
   if FFigure <> nil then
     FFigure.MouseMove(X, Y);
@@ -324,18 +368,20 @@ procedure TMagnifierTool.MouseUp(X, Y: integer);
 const
   eps = 16;
 var
-  WorldEndCoord: TDoublePoint;
-  TopLeft, BottomRight: TDoublePoint;
+  WorldStartCoord, WorldEndCoord: TDoublePoint;
+  TopLeft, BottomRight: TPoint;
+  RegionCenter: TDoublePoint;
   NewScale: double;
 begin
   if FFigure = nil then
     exit;
+  WorldStartCoord := CanvasToWorld(FStartPoint);
   WorldEndCoord := CanvasToWorld(X, Y);
 
-  TopLeft := DoublePoint(Min(FStartPoint.x, WorldEndCoord.x),
-    Min(FStartPoint.y, WorldEndCoord.y));
-  BottomRight := DoublePoint(Max(FStartPoint.x, WorldEndCoord.x),
-    Max(FStartPoint.y, WorldEndCoord.y));
+  TopLeft := WorldToCanvas(Min(WorldStartCoord.x, WorldEndCoord.x),
+    Min(WorldStartCoord.y, WorldEndCoord.y));
+  BottomRight := WorldToCanvas(Max(FStartPoint.x, WorldEndCoord.x),
+    Max(WorldStartCoord.y, WorldEndCoord.y));
 
   if (sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < eps*eps)
   then
@@ -349,10 +395,12 @@ begin
   begin
     if (TopLeft.x <> BottomRight.x) and (TopLeft.y <> BottomRight.y) then
     begin
+      RegionCenter := DoublePoint((TopLeft.x + BottomRight.x) / 2,
+        (TopLeft.y + BottomRight.y) / 2);
       NewScale := Max(CanvasWidth / (BottomRight.x - TopLeft.x),
         CanvasHeight / (BottomRight.y - TopLeft.y));
-      ZoomPoint(DoublePoint((TopLeft.x + BottomRight.x) / 2,
-        (TopLeft.y + BottomRight.y) / 2), NewScale);
+      ZoomPoint(RegionCenter, NewScale);
+      CenterToPoint(RegionCenter);
     end;
   end;
   FFigure := nil;
@@ -371,6 +419,7 @@ function TLineTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
 begin
+  inherited MouseDown(X, Y, Button);
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
@@ -390,20 +439,21 @@ end;
 
 function THandTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 begin
-  FStartPoint := CanvasToWorld(X, Y);
+  inherited MouseDown(X, Y, Button);
   FMButton := Button;
   Result := nil;
 end;
 
-procedure THandTool.MouseMove(X, Y: integer);
+procedure THandTool.MouseMove(X, Y: integer; Shift: TShiftState);
 var
-  EndCoord: TDoublePoint;
+  WorldStartCoord, WorldEndCoord: TDoublePoint;
 begin
   if FMButton = mbLeft then
   begin
-    EndCoord := CanvasToWorld(X, Y);
-    CanvasOffset.x := CanvasOffset.x + FStartPoint.x - EndCoord.x;
-    CanvasOffset.y := CanvasOffset.y + FStartPoint.y - EndCoord.y;
+    WorldStartCoord := CanvasToWorld(FStartPoint);
+    WorldEndCoord := CanvasToWorld(X, Y);
+    CanvasOffset.x := CanvasOffset.x + WorldStartCoord.x - WorldEndCoord.x;
+    CanvasOffset.y := CanvasOffset.y + WorldStartCoord.y - WorldEndCoord.y;
   end;
 end;
 
@@ -423,6 +473,7 @@ function TPolylineTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
 var
   WorldCoords: TDoublePoint;
 begin
+  inherited MouseDown(X, Y, Button);
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
@@ -433,15 +484,15 @@ begin
 end;
 
 initialization
-ToolClassBase := TToolClassList.Create(
-  THandTool,
-  TMagnifierTool,
-  TPolylineTool,
-  TLineTool,
-  TRectangleTool,
-  TEllipseTool,
-  TRoundRectTool,
-  TPolygonTool
+ToolsBase := TToolList.Create(
+  THandTool.Create,
+  TMagnifierTool.Create,
+  TPolylineTool.Create,
+  TLineTool.Create,
+  TRectangleTool.Create,
+  TEllipseTool.Create,
+  TRoundRectTool.Create,
+  TPolygonTool.Create
 );
 
 end.
