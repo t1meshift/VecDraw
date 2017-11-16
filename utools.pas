@@ -347,14 +347,17 @@ begin
 end;
 
 function TMagnifierTool.MouseDown(X, Y: integer; Button: TMouseButton): TFigure;
+var
+  WorldStartCoord: TDoublePoint;
 begin
   inherited MouseDown(X, Y, Button);
+  WorldStartCoord := CanvasToWorld(FStartPoint);
   FFigureDestroyed := false;
   FFigure := nil;
   if (Button <> mbLeft) and (Button <> mbRight) then
     exit(nil);
   FMButton := Button;
-  FFigure := TMagnifier.Create(FStartPoint.x, FStartPoint.y);
+  FFigure := TMagnifier.Create(WorldStartCoord.x, WorldStartCoord.y);
   Result := FFigure;
 end;
 
@@ -369,7 +372,7 @@ const
   eps = 16;
 var
   WorldStartCoord, WorldEndCoord: TDoublePoint;
-  TopLeft, BottomRight: TPoint;
+  TopLeft, BottomRight: TDoublePoint;
   RegionCenter: TDoublePoint;
   NewScale: double;
 begin
@@ -378,17 +381,17 @@ begin
   WorldStartCoord := CanvasToWorld(FStartPoint);
   WorldEndCoord := CanvasToWorld(X, Y);
 
-  TopLeft := WorldToCanvas(Min(WorldStartCoord.x, WorldEndCoord.x),
+  TopLeft := DoublePoint(Min(WorldStartCoord.x, WorldEndCoord.x),
     Min(WorldStartCoord.y, WorldEndCoord.y));
-  BottomRight := WorldToCanvas(Max(FStartPoint.x, WorldEndCoord.x),
+  BottomRight := DoublePoint(Max(WorldStartCoord.x, WorldEndCoord.x),
     Max(WorldStartCoord.y, WorldEndCoord.y));
 
   if (sqr(TopLeft.x - BottomRight.x) + sqr(TopLeft.y - BottomRight.y) < eps*eps)
   then
   begin
     case FMButton of
-      mbLeft: ZoomPoint(CanvasToWorld(X, Y), Scale*2);
-      mbRight: ZoomPoint(CanvasToWorld(X, Y), Scale/2);
+      mbLeft: ZoomPoint(WorldEndCoord, Scale*2);
+      mbRight: ZoomPoint(WorldEndCoord, Scale/2);
     end;
   end
   else
