@@ -46,18 +46,6 @@ type
       function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
-  { TBooleanParam }
-
-  TBooleanParam = class(TToolParam)
-    private
-      FValue: boolean;
-      procedure OnChangeControl(Sender: TObject); override;
-    public
-      constructor Create(AParamName: string; ADefaultValue: boolean);
-      property Value: boolean read FValue write FValue;
-      function ToControl(AParentPanel: TPanel): TControl; override;
-  end;
-
   { TLineStyleParam }
 
   TLineStyleParam = class(TToolParam)
@@ -93,31 +81,6 @@ type
   end;
 
 implementation
-
-{ TBooleanParam }
-
-procedure TBooleanParam.OnChangeControl(Sender: TObject);
-begin
-  FValue := (Sender as TCheckBox).Checked;
-end;
-
-constructor TBooleanParam.Create(AParamName: string; ADefaultValue: boolean);
-begin
-  FName := AParamName;
-  FValue := ADefaultValue;
-end;
-
-function TBooleanParam.ToControl(AParentPanel: TPanel): TControl;
-begin
-  Result := TCheckBox.Create(AParentPanel);
-  with Result as TCheckBox do
-  begin
-    Parent := AParentPanel;
-    Caption := FName;
-    Checked := FValue;
-    OnClick := @OnChangeControl;
-  end;
-end;
 
 { TColorParam }
 

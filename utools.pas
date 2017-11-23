@@ -39,6 +39,7 @@ type
     public
       constructor Create; override;
       destructor Destroy; override;
+      procedure MouseDown(X, Y: integer; Button: TMouseButton); override;
       procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
       function MouseUp(X, Y: integer): TFigure; override;
       function GetParams: TToolParamList; override;
@@ -131,10 +132,85 @@ type
       function GetParams: TToolParamList; override;
   end;
 
+  { TSelectionTool }
+
+  TSelectionTool = class(TTool)
+    public
+      constructor Create; override;
+      procedure MouseDown(X, Y: integer; Button: TMouseButton); override;
+      procedure MouseMove(X, Y: integer; Shift: TShiftState); override;
+      function MouseUp(X, Y: integer): TFigure; override;
+      function GetParams: TToolParamList; override;
+  end;
+
 var
   ToolsBase: TToolList;
 
 implementation
+
+{ TSelectionTool }
+
+constructor TSelectionTool.Create;
+begin
+  FMButton := mbExtra2;
+end;
+
+procedure TSelectionTool.MouseDown(X, Y: integer; Button: TMouseButton);
+var
+  WorldStartCoord: TDoublePoint;
+begin
+  inherited MouseDown(X, Y, Button);
+  WorldStartCoord := CanvasToWorld(FStartPoint);
+  FFigure := nil;
+  if Button <> mbLeft then
+    exit;
+  FMButton := Button;
+  FFigure := TRegionSelection.Create(WorldStartCoord.x, WorldStartCoord.y);
+end;
+
+procedure TSelectionTool.MouseMove(X, Y: integer; Shift: TShiftState);
+begin
+  if FFigure <> nil then
+    FFigure.MouseMove(X, Y);
+end;
+
+function TSelectionTool.MouseUp(X, Y: integer): TFigure;
+const
+  eps = 16;
+var
+  WorldStartCoord, WorldEndCoord: TDoublePoint;
+  TopLeft, BottomRight: TDoublePoint;
+  CurrentFigure: TFigure;
+begin
+  if FFigure = nil then
+    exit(nil);
+
+  WorldStartCoord := CanvasToWorld(FStartPoint);
+  WorldEndCoord := CanvasToWorld(X, Y);
+
+  TopLeft := DoublePoint(Min(WorldStartCoord.x, WorldEndCoord.x),
+    Min(WorldStartCoord.y, WorldEndCoord.y));
+  BottomRight := DoublePoint(Max(WorldStartCoord.x, WorldEndCoord.x),
+    Max(WorldStartCoord.y, WorldEndCoord.y));
+
+  if Dist(FStartPoint, Point(X, Y)) < eps then
+  begin
+    //TODO figure and point intersection
+  end
+  else
+    for CurrentFigure in CanvasItems do
+      if CurrentFigure <> nil then
+        CurrentFigure.Selected := CurrentFigure.InRect(TopLeft, BottomRight);
+
+  Result := nil;
+  FreeAndNil(FFigure);
+  FMButton := mbExtra2;
+end;
+
+function TSelectionTool.GetParams: TToolParamList;
+begin
+  Result := nil;
+end;
 
 { TTool }
 
@@ -199,6 +275,12 @@ begin
   FreeAndNil(FLineWidth);
   FreeAndNil(FLineColor);
   FreeAndNil(FLineStyle);
+end;
+
+procedure TDrawableTool.MouseDown(X, Y: integer; Button: TMouseButton);
+begin
+  inherited MouseDown(X, Y, Button);
+  RemoveSelection;
 end;
 
 procedure TDrawableTool.MouseMove(X, Y: integer; Shift: TShiftState);
@@ -354,7 +436,7 @@ begin
   if (Button <> mbLeft) and (Button <> mbRight) then
     exit;
   FMButton := Button;
-  FFigure := TMagnifier.Create(WorldStartCoord.x, WorldStartCoord.y);
+  FFigure := TRegionSelection.Create(WorldStartCoord.x, WorldStartCoord.y);
 end;
 
 procedure TMagnifierTool.MouseMove(X, Y: integer; Shift: TShiftState);
@@ -479,6 +561,7 @@ end;
 initialization
 ToolsBase := TToolList.Create(
   THandTool.Create,
+  TSelectionTool.Create,
   TMagnifierTool.Create,
   TPolylineTool.Create,
   TLineTool.Create,

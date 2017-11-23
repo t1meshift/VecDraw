@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
   Left = 147
   Height = 654
-  Top = 22
+  Top = 42
   Width = 1055
   Caption = 'DrawForm'
   ClientHeight = 634
@@ -177,18 +177,6 @@ object DrawForm: TDrawForm
     end
     object EditMenuItem: TMenuItem
       Caption = 'Edit'
-      object ShowAllMenuItem: TMenuItem
-        Caption = 'Show all'
-        OnClick = ShowAllMenuItemClick
-      end
-      object ClearAllMenuItem: TMenuItem
-        Caption = 'Clear all'
-        OnClick = ClearAllMenuItemClick
-      end
-      object DelimeterMenuItem: TMenuItem
-        Caption = '--------'
-        Enabled = False
-      end
       object UndoMenuItem: TMenuItem
         Action = UndoAction
         Caption = 'Undo'
@@ -268,6 +256,35 @@ object DrawForm: TDrawForm
           0000000000000000000000000000000000000000000000000000000000000000
           0000000000000000000000000000000000000000000000000000
         }
+      end
+      object HistorySeparator: TMenuItem
+        Caption = '-'
+      end
+      object ShowAllMenuItem: TMenuItem
+        Caption = 'Show all'
+        OnClick = ShowAllMenuItemClick
+      end
+      object ClearAllMenuItem: TMenuItem
+        Caption = 'Clear all'
+        OnClick = ClearAllMenuItemClick
+      end
+      object VisibilitySeparator: TMenuItem
+        Caption = '-'
+        Enabled = False
+      end
+      object SelectAllMenuItem: TMenuItem
+        Caption = 'Select all'
+        ShortCut = 16449
+        OnClick = SelectAllMenuItemClick
+      end
+      object RemoveSelectionMenuItem: TMenuItem
+        Caption = 'Remove selection'
+        OnClick = RemoveSelectionMenuItemClick
+      end
+      object DeleteSelectedMenuItem: TMenuItem
+        Caption = 'Delete selected'
+        ShortCut = 46
+        OnClick = DeleteSelectedMenuItemClick
       end
     end
     object HelpMenuItem: TMenuItem

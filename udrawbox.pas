@@ -15,11 +15,15 @@ type
 
   TDrawForm = class(TForm)
     CanvasPropsPanel: TPanel;
+    DeleteSelectedMenuItem: TMenuItem;
+    SelectAllMenuItem: TMenuItem;
+    RemoveSelectionMenuItem: TMenuItem;
+    HistorySeparator: TMenuItem;
     PercentSignLabel: TLabel;
     ToolParamsPanel: TPanel;
     ScaleFloatSpin: TFloatSpinEdit;
     ScaleLabel: TLabel;
-    DelimeterMenuItem: TMenuItem;
+    VisibilitySeparator: TMenuItem;
     ClearAllMenuItem: TMenuItem;
     HorizontalScrollBar: TScrollBar;
     ShowAllMenuItem: TMenuItem;
@@ -38,10 +42,13 @@ type
     UndoMenuItem: TMenuItem;
     MainPaintBox: TPaintBox;
     procedure ClearAllMenuItemClick(Sender: TObject);
+    procedure DeleteSelectedMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+    procedure RemoveSelectionMenuItemClick(Sender: TObject);
+    procedure SelectAllMenuItemClick(Sender: TObject);
     procedure ShowAllMenuItemClick(Sender: TObject);
     procedure SetScrollBars;
     procedure MainPaintBoxResize(Sender: TObject);
@@ -79,7 +86,7 @@ var
   DrawForm: TDrawForm;
   IsDrawing: boolean;
   CurrentTool: TTool;
-  CanvasItems, UndoHistory: TFigureList;
+  UndoHistory: TFigureList;
   WorldTopLeft, WorldBottomRight: TDoublePoint;
 
 implementation
@@ -187,6 +194,18 @@ begin
   MainPaintBox.Invalidate;
 end;
 
+procedure TDrawForm.RemoveSelectionMenuItemClick(Sender: TObject);
+begin
+  RemoveSelection;
+  Invalidate;
+end;
+
+procedure TDrawForm.SelectAllMenuItemClick(Sender: TObject);
+begin
+  SelectAll;
+  Invalidate;
+end;
+
 procedure TDrawForm.ShowAllMenuItemClick(Sender: TObject);
 var
   NewScale: double;
@@ -283,8 +302,6 @@ begin
       l.Parent := ToolParamsPanel;
       l.Caption := CurrParam.Name;
       l.Align := alBottom;
-      if CurrParam.ClassNameIs('TBooleanParam') then
-        FreeAndNil(l);
       ToolParamsPanel.Visible := true;
     end;
   end;
@@ -355,6 +372,8 @@ begin
   CalculateWorldBorders;
   for i in CanvasItems do
     i.Draw(MainPaintBox.Canvas);
+  for i in CanvasItems do
+    i.DrawSelection(MainPaintBox.Canvas);
   if (CurrentTool <> nil) and (CurrentTool.Figure <> nil) then
     CurrentTool.Figure.Draw(MainPaintBox.Canvas);
 end;
@@ -395,6 +414,12 @@ begin
   SetLength(CanvasItems, 0);
   MainPaintBox.Invalidate;
   SetScrollBars;
+end;
+
+procedure TDrawForm.DeleteSelectedMenuItemClick(Sender: TObject);
+begin
+  DeleteSelected;
+  Invalidate;
 end;
 
 procedure TDrawForm.AboutMenuItemClick(Sender: TObject);
