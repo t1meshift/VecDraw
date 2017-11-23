@@ -18,7 +18,6 @@ type
     DeleteSelectedMenuItem: TMenuItem;
     SelectAllMenuItem: TMenuItem;
     RemoveSelectionMenuItem: TMenuItem;
-    HistorySeparator: TMenuItem;
     PercentSignLabel: TLabel;
     ToolParamsPanel: TPanel;
     ScaleFloatSpin: TFloatSpinEdit;
@@ -29,8 +28,6 @@ type
     ShowAllMenuItem: TMenuItem;
     VerticalScrollBar: TScrollBar;
     ToolsPanel: TPanel;
-    RedoAction: TAction;
-    UndoAction: TAction;
     EditorActionList: TActionList;
     MainMenu: TMainMenu;
     FileMenuItem: TMenuItem;
@@ -38,8 +35,6 @@ type
     ExitMenuItem: TMenuItem;
     AboutMenuItem: TMenuItem;
     EditMenuItem: TMenuItem;
-    RedoMenuItem: TMenuItem;
-    UndoMenuItem: TMenuItem;
     MainPaintBox: TPaintBox;
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure DeleteSelectedMenuItemClick(Sender: TObject);
@@ -61,8 +56,6 @@ type
     procedure MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure MainPaintBoxPaint(Sender: TObject);
-    procedure UndoActionExecute(Sender: TObject);
-    procedure RedoActionExecute(Sender: TObject);
     procedure AboutMenuItemClick(Sender: TObject);
     procedure ExitMenuItemClick(Sender: TObject);
     procedure ScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
@@ -86,7 +79,6 @@ var
   DrawForm: TDrawForm;
   IsDrawing: boolean;
   CurrentTool: TTool;
-  UndoHistory: TFigureList;
   WorldTopLeft, WorldBottomRight: TDoublePoint;
 
 implementation
@@ -329,8 +321,6 @@ end;
 
 procedure TDrawForm.MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
-var
-  i: integer;
 begin
   SetLength(CanvasItems, Length(CanvasItems) + 1);
   CanvasItems[High(CanvasItems)] := CurrentTool.MouseUp(X, Y);
@@ -342,9 +332,6 @@ begin
   if IsDrawing then
   begin
     IsDrawing := false;
-    for i := Low(UndoHistory) to High(UndoHistory) do
-      FreeAndNil(UndoHistory[i]);
-    SetLength(UndoHistory, 0);
   end;
   MainPaintBox.Invalidate;
 end;
@@ -378,37 +365,10 @@ begin
     CurrentTool.Figure.Draw(MainPaintBox.Canvas);
 end;
 
-procedure TDrawForm.UndoActionExecute(Sender: TObject);
-begin
-  if Length(CanvasItems) > 0 then
-  begin
-    SetLength(UndoHistory, Length(UndoHistory) + 1);
-    UndoHistory[High(UndoHistory)] := CanvasItems[High(CanvasItems)];
-    SetLength(CanvasItems, Length(CanvasItems) - 1);
-    MainPaintBox.Invalidate;
-    SetScrollBars;
-  end;
-end;
-
-procedure TDrawForm.RedoActionExecute(Sender: TObject);
-begin
-  if Length(UndoHistory) > 0 then
-  begin
-    SetLength(CanvasItems, Length(CanvasItems) + 1);
-    CanvasItems[High(CanvasItems)] := UndoHistory[High(UndoHistory)];
-    SetLength(UndoHistory, Length(UndoHistory) - 1);
-    MainPaintBox.Invalidate;
-    SetScrollBars;
-  end;
-end;
-
 procedure TDrawForm.ClearAllMenuItemClick(Sender: TObject);
 var
   i: integer;
 begin
-  for i := Low(UndoHistory) to High(UndoHistory) do
-    FreeAndNil(UndoHistory[i]);
-  SetLength(UndoHistory, 0);
   for i := Low(CanvasItems) to High(CanvasItems) do
     FreeAndNil(CanvasItems[i]);
   SetLength(CanvasItems, 0);
