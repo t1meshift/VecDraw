@@ -419,6 +419,7 @@ end;
 procedure TDrawForm.DeleteSelectedMenuItemClick(Sender: TObject);
 begin
   DeleteSelected;
+  SetScrollBars;
   Invalidate;
 end;
 
