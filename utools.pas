@@ -180,7 +180,7 @@ const
 var
   WorldStartCoord, WorldEndCoord: TDoublePoint;
   TopLeft, BottomRight: TDoublePoint;
-  CurrentFigure: TFigure;
+  i: integer;
 begin
   if FFigure = nil then
     exit(nil);
@@ -193,14 +193,21 @@ begin
   BottomRight := DoublePoint(Max(WorldStartCoord.x, WorldEndCoord.x),
     Max(WorldStartCoord.y, WorldEndCoord.y));
 
+  RemoveSelection;
   if Dist(FStartPoint, Point(X, Y)) < eps then
   begin
-    //TODO figure and point intersection
+    for i := High(CanvasItems) downto Low(CanvasItems) do
+      if CanvasItems[i] <> nil then
+      begin
+        CanvasItems[i].Selected := CanvasItems[i].UnderPoint(WorldStartCoord);
+        if CanvasItems[i].Selected then
+          break;
+      end;
   end
   else
-    for CurrentFigure in CanvasItems do
-      if CurrentFigure <> nil then
-        CurrentFigure.Selected := CurrentFigure.InRect(TopLeft, BottomRight);
+    for i := Low(CanvasItems) to High(CanvasItems) do
+      if CanvasItems[i] <> nil then
+        CanvasItems[i].Selected := CanvasItems[i].InRect(TopLeft, BottomRight);
 
   Result := nil;
   FreeAndNil(FFigure);

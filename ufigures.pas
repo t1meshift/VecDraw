@@ -5,7 +5,7 @@ unit UFigures;
 interface
 
 uses
-  Classes, SysUtils, Graphics, UTransform, Math, Controls;
+  Classes, SysUtils, Graphics, UTransform, Windows, Math, Controls;
 
 type
 
@@ -32,7 +32,7 @@ type
       procedure DrawSelection(ACanvas: TCanvas);
       procedure MouseMove(X, Y: integer); virtual; abstract;
       function InRect(RectTL, RectBR: TDoublePoint): boolean;
-      function PointInFigure(APoint: TDoublePoint): boolean; virtual; abstract;
+      function UnderPoint(APoint: TDoublePoint): boolean; virtual; abstract;
   end;
 
   TFigureList = array of TFigure;
@@ -54,6 +54,7 @@ type
         ALineStyle: TPenStyle);
       procedure Draw(ACanvas: TCanvas); override;
       procedure MouseMove(X, Y: integer); override;
+      function UnderPoint(APoint: TDoublePoint): boolean; override;
   end;
 
   { TLine }
@@ -71,6 +72,7 @@ type
         ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
       procedure Draw(ACanvas: TCanvas); override;
       procedure MouseMove(X, Y: integer); override;
+      function UnderPoint(APoint: TDoublePoint): boolean; override;
   end;
 
   { TRoundRect }
@@ -84,6 +86,7 @@ type
         ARoundX, ARoundY: integer);
       procedure Draw(ACanvas: TCanvas); override;
       procedure MouseMove(X, Y: integer); override;
+      function UnderPoint(APoint: TDoublePoint): boolean; override;
   end;
 
   { TEllipse }
@@ -94,6 +97,7 @@ type
         ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
       procedure Draw(ACanvas: TCanvas); override;
       procedure MouseMove(X, Y: integer); override;
+      function UnderPoint(APoint: TDoublePoint): boolean; override;
   end;
 
   { TPolygon }
@@ -108,6 +112,7 @@ type
         AVertexCount: integer);
      procedure Draw(ACanvas: TCanvas); override;
      procedure MouseMove(X, Y: integer); override;
+     function UnderPoint(APoint: TDoublePoint): boolean; override;
   end;
 
 procedure SelectAll;
@@ -212,6 +217,22 @@ begin
   end;
 end;
 
+function TPolygon.UnderPoint(APoint: TDoublePoint): boolean;
+var
+  RegionFigure: HRGN;
+  CanvasVertexes: TPointList;
+  CanvasPoint: TPoint;
+  i: integer;
+begin
+  SetLength(CanvasVertexes, VertexCount);
+  for i := Low(Vertexes) to High(Vertexes) do
+    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+  RegionFigure := CreatePolygonRgn(CanvasVertexes[0], VertexCount, WINDING);
+  CanvasPoint := WorldToCanvas(APoint);
+  Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
+  DeleteObject(RegionFigure);
+end;
+
 { TRoundRect }
 
 constructor TRoundRect.Create(X, Y: double; ALineWidth: integer;
@@ -245,6 +266,24 @@ end;
 procedure TRoundRect.MouseMove(X, Y: integer);
 begin
   Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
+end;
+
+function TRoundRect.UnderPoint(APoint: TDoublePoint): boolean;
+var
+  RegionFigure: HRGN;
+  CanvasVertexes: TPointList;
+  CanvasPoint: TPoint;
+  i: integer;
+begin
+  SetLength(CanvasVertexes, Length(Vertexes));
+  for i := Low(Vertexes) to High(Vertexes) do
+    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+
+  RegionFigure := CreateRoundRectRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
+    CanvasVertexes[1].x, CanvasVertexes[1].y, RoundX*2, RoundY*2);
+  CanvasPoint := WorldToCanvas(APoint);
+  Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
+  DeleteObject(RegionFigure);
 end;
 
 { TFigure }
@@ -295,7 +334,6 @@ begin
     SelectionBR := WorldToCanvas(FBottomRight);
     with ACanvas do
     begin
-      //Pen.Color := clRed;
       Pen.Width := 2;
       Pen.Style := psDash;
       Pen.Mode := pmNot;
@@ -388,6 +426,53 @@ begin
   Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
 end;
 
+function TPolyLine.UnderPoint(APoint: TDoublePoint): boolean;
+var
+  RegionSegment: HRGN;
+  SegmentTop, SegmentBottom: TDoublePoint;
+  CanvasPoint: TPoint;
+  SegmentRect: TPointList;
+  i: integer;
+begin
+  CanvasPoint := WorldToCanvas(APoint);
+  SetLength(SegmentRect, 4);
+  for i := Low(Vertexes) to High(Vertexes)-1 do
+  begin
+    //Pre-calculate top and bottom points
+    if Vertexes[i].y < Vertexes[i+1].y then
+    begin
+      SegmentTop := DoublePoint(Vertexes[i].x, Vertexes[i].y - LineWidth - 5);
+      SegmentBottom := DoublePoint(Vertexes[i+1].x, Vertexes[i+1].y
+        + LineWidth + 5);
+    end
+    else
+    begin
+      SegmentTop := DoublePoint(Vertexes[i+1].x, Vertexes[i+1].y
+        - LineWidth - 5);
+      SegmentBottom := DoublePoint(Vertexes[i].x, Vertexes[i].y
+        + LineWidth + 5);
+    end;
+    //Build up a selection area polygon
+    SegmentRect[0] := WorldToCanvas(SegmentTop.x - LineWidth div 2 - 5,
+      SegmentTop.y);
+    SegmentRect[1] := WorldToCanvas(SegmentTop.x + LineWidth div 2 + 5,
+      SegmentTop.y);
+    SegmentRect[2] := WorldToCanvas(SegmentBottom.x + LineWidth div 2 + 5,
+      SegmentBottom.y);
+    SegmentRect[3] := WorldToCanvas(SegmentBottom.x - LineWidth div 2 - 5,
+      SegmentBottom.y);
+
+    RegionSegment := CreatePolygonRgn(SegmentRect[0], 4, WINDING);
+    if PtInRegion(RegionSegment, CanvasPoint.x, CanvasPoint.y) then
+    begin
+      DeleteObject(RegionSegment);
+      exit(true);
+    end;
+    DeleteObject(RegionSegment);
+  end;
+  Result := false;
+end;
+
 { TLine }
 
 procedure TLine.MouseMove(X, Y: integer);
@@ -428,6 +513,24 @@ begin
   Vertexes[High(Vertexes)] := CanvasToWorld(X, Y)
 end;
 
+function TRectangle.UnderPoint(APoint: TDoublePoint): boolean;
+var
+  RegionFigure: HRGN;
+  CanvasVertexes: TPointList;
+  CanvasPoint: TPoint;
+  i: integer;
+begin
+  SetLength(CanvasVertexes, Length(Vertexes));
+  for i := Low(Vertexes) to High(Vertexes) do
+    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+
+  RegionFigure := CreateRectRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
+    CanvasVertexes[1].x, CanvasVertexes[1].y);
+  CanvasPoint := WorldToCanvas(APoint);
+  Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
+  DeleteObject(RegionFigure);
+end;
+
 { TEllipse }
 
 constructor TEllipse.Create(X, Y: double; ALineWidth: integer;
@@ -459,6 +562,24 @@ end;
 procedure TEllipse.MouseMove(X, Y: integer);
 begin
   Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
+end;
+
+function TEllipse.UnderPoint(APoint: TDoublePoint): boolean;
+var
+  RegionFigure: HRGN;
+  CanvasVertexes: TPointList;
+  CanvasPoint: TPoint;
+  i: integer;
+begin
+  SetLength(CanvasVertexes, Length(Vertexes));
+  for i := Low(Vertexes) to High(Vertexes) do
+    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+
+  RegionFigure := CreateEllipticRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
+    CanvasVertexes[1].x, CanvasVertexes[1].y);
+  CanvasPoint := WorldToCanvas(APoint);
+  Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
+  DeleteObject(RegionFigure);
 end;
 
 end.
