@@ -203,6 +203,16 @@ object DrawForm: TDrawForm
         ShortCut = 46
         OnClick = DeleteSelectedMenuItemClick
       end
+      object MoveOnTopMenuItem: TMenuItem
+        Caption = 'Move on top'
+        ShortCut = 24614
+        OnClick = MoveOnTopMenuItemClick
+      end
+      object MoveOnBottomMenuItem: TMenuItem
+        Caption = 'Move on bottom'
+        ShortCut = 24616
+        OnClick = MoveOnBottomMenuItemClick
+      end
     end
     object HelpMenuItem: TMenuItem
       Caption = 'Help'

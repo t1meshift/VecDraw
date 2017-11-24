@@ -16,6 +16,8 @@ type
   TDrawForm = class(TForm)
     CanvasPropsPanel: TPanel;
     DeleteSelectedMenuItem: TMenuItem;
+    MoveOnTopMenuItem: TMenuItem;
+    MoveOnBottomMenuItem: TMenuItem;
     SelectAllMenuItem: TMenuItem;
     RemoveSelectionMenuItem: TMenuItem;
     PercentSignLabel: TLabel;
@@ -42,6 +44,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+    procedure MoveOnBottomMenuItemClick(Sender: TObject);
+    procedure MoveOnTopMenuItemClick(Sender: TObject);
     procedure RemoveSelectionMenuItemClick(Sender: TObject);
     procedure SelectAllMenuItemClick(Sender: TObject);
     procedure ShowAllMenuItemClick(Sender: TObject);
@@ -184,6 +188,18 @@ begin
     ZoomPoint(CanvasToWorld(MousePos), Scale/2);
   SetScrollBars;
   MainPaintBox.Invalidate;
+end;
+
+procedure TDrawForm.MoveOnBottomMenuItemClick(Sender: TObject);
+begin
+  MoveSelectedOnBottom;
+  Invalidate;
+end;
+
+procedure TDrawForm.MoveOnTopMenuItemClick(Sender: TObject);
+begin
+  MoveSelectedOnTop;
+  Invalidate;
 end;
 
 procedure TDrawForm.RemoveSelectionMenuItemClick(Sender: TObject);

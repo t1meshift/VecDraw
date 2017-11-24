@@ -118,6 +118,8 @@ type
 procedure SelectAll;
 procedure RemoveSelection;
 procedure DeleteSelected;
+procedure MoveSelectedOnTop;
+procedure MoveSelectedOnBottom;
 
 var
   CanvasItems: TFigureList;
@@ -163,6 +165,38 @@ begin
       end;
     end;
   SetLength(CanvasItems, Length(CanvasItems) - j);
+end;
+
+procedure MoveSelectedOnTop;
+var
+  i: integer;
+  t: TFigure;
+begin
+  for i := High(CanvasItems) downto Low(CanvasItems) do
+  begin
+    if CanvasItems[i].Selected and (i+1 < Length(CanvasItems)) then
+    begin
+      t := CanvasItems[i+1];
+      CanvasItems[i+1] := CanvasItems[i];
+      CanvasItems[i] := t;
+    end;
+  end;
+end;
+
+procedure MoveSelectedOnBottom;
+var
+  i: integer;
+  t: TFigure;
+begin
+  for i := Low(CanvasItems) to High(CanvasItems) do
+  begin
+    if CanvasItems[i].Selected and (i-1 >= 0) then
+    begin
+      t := CanvasItems[i-1];
+      CanvasItems[i-1] := CanvasItems[i];
+      CanvasItems[i] := t;
+    end;
+  end;
 end;
 
 { TPolygon }
@@ -270,7 +304,7 @@ end;
 
 function TRoundRect.UnderPoint(APoint: TDoublePoint): boolean;
 var
-  RegionFigure: HRGN;
+  RegionFigure, RegionOuter, RegionInner: HRGN;
   CanvasVertexes: TPointList;
   CanvasPoint: TPoint;
   i: integer;
@@ -279,11 +313,45 @@ begin
   for i := Low(Vertexes) to High(Vertexes) do
     CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
 
-  RegionFigure := CreateRoundRectRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
-    CanvasVertexes[1].x, CanvasVertexes[1].y, RoundX*2, RoundY*2);
+  RegionFigure := CreateRectRgn(0,0,0,0);
   CanvasPoint := WorldToCanvas(APoint);
+  if FillStyle = bsClear then
+  begin
+    RegionInner := CreateRoundRectRgn(
+      max(CanvasVertexes[0].x - LineWidth div 2 - 5,
+      CanvasVertexes[1].x - LineWidth div 2 - 5),
+      max(CanvasVertexes[0].y - LineWidth div 2 - 5,
+      CanvasVertexes[1].y - LineWidth div 2 - 5),
+      min(CanvasVertexes[0].x + LineWidth div 2 + 5,
+      CanvasVertexes[1].x + LineWidth div 2 + 5),
+      min(CanvasVertexes[0].y + LineWidth div 2 + 5,
+      CanvasVertexes[1].y + LineWidth div 2 + 5),
+      RoundX*2, RoundY*2
+    );
+    RegionOuter := CreateRoundRectRgn(
+      min(CanvasVertexes[0].x - LineWidth div 2 - 5,
+      CanvasVertexes[1].x - LineWidth div 2 - 5),
+      min(CanvasVertexes[0].y - LineWidth div 2 - 5,
+      CanvasVertexes[1].y - LineWidth div 2 - 5),
+      max(CanvasVertexes[0].x + LineWidth div 2 + 5,
+      CanvasVertexes[1].x + LineWidth div 2 + 5),
+      max(CanvasVertexes[0].y + LineWidth div 2 + 5,
+      CanvasVertexes[1].y + LineWidth div 2 + 5),
+      RoundX*2, RoundY*2
+    );
+    CombineRgn(RegionFigure, RegionOuter, RegionInner, RGN_DIFF);
+  end
+  else
+    RegionFigure := CreateRoundRectRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
+    CanvasVertexes[1].x, CanvasVertexes[1].y, RoundX*2, RoundY*2);
+
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
+  if FillStyle = bsClear then
+  begin
+    DeleteObject(RegionInner);
+    DeleteObject(RegionOuter);
+  end;
 end;
 
 { TFigure }
@@ -515,7 +583,7 @@ end;
 
 function TRectangle.UnderPoint(APoint: TDoublePoint): boolean;
 var
-  RegionFigure: HRGN;
+  RegionFigure, RegionOuter, RegionInner: HRGN;
   CanvasVertexes: TPointList;
   CanvasPoint: TPoint;
   i: integer;
@@ -524,11 +592,43 @@ begin
   for i := Low(Vertexes) to High(Vertexes) do
     CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
 
-  RegionFigure := CreateRectRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
-    CanvasVertexes[1].x, CanvasVertexes[1].y);
+  RegionFigure := CreateRectRgn(0,0,0,0);
   CanvasPoint := WorldToCanvas(APoint);
+  if FillStyle = bsClear then
+  begin
+    RegionInner := CreateRectRgn(
+      max(CanvasVertexes[0].x - LineWidth div 2 - 5,
+      CanvasVertexes[1].x - LineWidth div 2 - 5),
+      max(CanvasVertexes[0].y - LineWidth div 2 - 5,
+      CanvasVertexes[1].y - LineWidth div 2 - 5),
+      min(CanvasVertexes[0].x + LineWidth div 2 + 5,
+      CanvasVertexes[1].x + LineWidth div 2 + 5),
+      min(CanvasVertexes[0].y + LineWidth div 2 + 5,
+      CanvasVertexes[1].y + LineWidth div 2 + 5)
+    );
+    RegionOuter := CreateRectRgn(
+      min(CanvasVertexes[0].x - LineWidth div 2 - 5,
+      CanvasVertexes[1].x - LineWidth div 2 - 5),
+      min(CanvasVertexes[0].y - LineWidth div 2 - 5,
+      CanvasVertexes[1].y - LineWidth div 2 - 5),
+      max(CanvasVertexes[0].x + LineWidth div 2 + 5,
+      CanvasVertexes[1].x + LineWidth div 2 + 5),
+      max(CanvasVertexes[0].y + LineWidth div 2 + 5,
+      CanvasVertexes[1].y + LineWidth div 2 + 5)
+    );
+    CombineRgn(RegionFigure, RegionOuter, RegionInner, RGN_DIFF);
+  end
+  else
+    RegionFigure := CreateRectRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
+    CanvasVertexes[1].x, CanvasVertexes[1].y);
+
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
+  if FillStyle = bsClear then
+  begin
+    DeleteObject(RegionInner);
+    DeleteObject(RegionOuter);
+  end;
 end;
 
 { TEllipse }
@@ -566,7 +666,7 @@ end;
 
 function TEllipse.UnderPoint(APoint: TDoublePoint): boolean;
 var
-  RegionFigure: HRGN;
+  RegionFigure, RegionOuter, RegionInner: HRGN;
   CanvasVertexes: TPointList;
   CanvasPoint: TPoint;
   i: integer;
@@ -575,11 +675,43 @@ begin
   for i := Low(Vertexes) to High(Vertexes) do
     CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
 
-  RegionFigure := CreateEllipticRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
-    CanvasVertexes[1].x, CanvasVertexes[1].y);
+  RegionFigure := CreateRectRgn(0,0,0,0);
   CanvasPoint := WorldToCanvas(APoint);
+  if FillStyle = bsClear then
+  begin
+    RegionInner := CreateEllipticRgn(
+      max(CanvasVertexes[0].x - LineWidth div 2 - 5,
+      CanvasVertexes[1].x - LineWidth div 2 - 5),
+      max(CanvasVertexes[0].y - LineWidth div 2 - 5,
+      CanvasVertexes[1].y - LineWidth div 2 - 5),
+      min(CanvasVertexes[0].x + LineWidth div 2 + 5,
+      CanvasVertexes[1].x + LineWidth div 2 + 5),
+      min(CanvasVertexes[0].y + LineWidth div 2 + 5,
+      CanvasVertexes[1].y + LineWidth div 2 + 5)
+    );
+    RegionOuter := CreateEllipticRgn(
+      min(CanvasVertexes[0].x - LineWidth div 2 - 5,
+      CanvasVertexes[1].x - LineWidth div 2 - 5),
+      min(CanvasVertexes[0].y - LineWidth div 2 - 5,
+      CanvasVertexes[1].y - LineWidth div 2 - 5),
+      max(CanvasVertexes[0].x + LineWidth div 2 + 5,
+      CanvasVertexes[1].x + LineWidth div 2 + 5),
+      max(CanvasVertexes[0].y + LineWidth div 2 + 5,
+      CanvasVertexes[1].y + LineWidth div 2 + 5)
+    );
+    CombineRgn(RegionFigure, RegionOuter, RegionInner, RGN_DIFF);
+  end
+  else
+    RegionFigure := CreateEllipticRgn(CanvasVertexes[0].x, CanvasVertexes[0].y,
+    CanvasVertexes[1].x, CanvasVertexes[1].y);
+
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
+  if FillStyle = bsClear then
+  begin
+    DeleteObject(RegionInner);
+    DeleteObject(RegionOuter);
+  end;
 end;
 
 end.
