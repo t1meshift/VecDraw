@@ -375,8 +375,7 @@ begin
   CalculateWorldBorders;
   for i in CanvasItems do
     i.Draw(MainPaintBox.Canvas);
-  for i in CanvasItems do
-    i.DrawSelection(MainPaintBox.Canvas);
+  DrawSelection(MainPaintBox.Canvas);
   if (CurrentTool <> nil) and (CurrentTool.Figure <> nil) then
     CurrentTool.Figure.Draw(MainPaintBox.Canvas);
 end;
