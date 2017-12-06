@@ -17,17 +17,21 @@ type
 
   TFigure = class(TPersistent)
   protected
-    Vertexes: TDPointList;
+    FVertexes: TDPointList;
     function FTopLeft: TDoublePoint;
     function FBottomRight: TDoublePoint;
   public
     Selected: boolean;
+    property Vertexes: TDPointList read FVertexes;
     property TopLeftBorder: TDoublePoint read FTopLeft;
     property BottomRightBorder: TDoublePoint read FBottomRight;
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
     procedure MouseMove(X, Y: integer); virtual; abstract;
     function InRect(RectTL, RectBR: TDoublePoint): boolean;
+    function GetVertexIndexAtPos(APoint: TDoublePoint): integer;
     function UnderPoint(APoint: TDoublePoint): boolean; virtual; abstract;
+    procedure MoveFigure(dx, dy: double);
+    procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint);
   end;
 
   TFigureList = array of TFigure;
@@ -125,7 +129,7 @@ type
 
   TPolygon = class(TFillableFigure)
   private
-    VertexCount: integer;
+    FVertexCount: integer;
     StartPoint: TDoublePoint;
   public
     constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
@@ -134,8 +138,11 @@ type
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(APoint: TDoublePoint): boolean; override;
+    property VertexCount: integer read FVertexCount write FVertexCount;
   end;
 
+function GetSelectionTopLeft: TDoublePoint;
+function GetSelectionBottomRight: TDoublePoint;
 procedure DrawSelection(ACanvas: TCanvas);
 procedure SelectAll;
 procedure RemoveSelection;
@@ -148,17 +155,14 @@ var
 
 implementation
 
-procedure DrawSelection(ACanvas: TCanvas);
-const
-  PADDING = 5;
+function GetSelectionTopLeft: TDoublePoint;
 var
-  SelectionTL, SelectionBR: TDoublePoint;
-  CSelectionTL, CSelectionBR: TPoint;
+  HasSelection: boolean;
   f: TFigure;
   d: double;
-  HasSelection: boolean;
 begin
-  HasSelection := False;
+  HasSelection := false;
+  Result := DoublePoint(0,0);
   for f in CanvasItems do
   begin
     if f.Selected then
@@ -166,23 +170,83 @@ begin
       d := (f as TDrawableFigure).LineWidth / 2;
       if not HasSelection then
       begin
-        SelectionTL.x := f.FTopLeft.x - d;
-        SelectionTL.y := f.FTopLeft.y - d;
-        SelectionBR.x := f.FBottomRight.x + d;
-        SelectionBR.y := f.FBottomRight.y + d;
+        Result.x := f.FTopLeft.x - d;
+        Result.y := f.FTopLeft.y - d;
       end
       else
       begin
-        SelectionTL.x := min(SelectionTL.x, f.FTopLeft.x - d);
-        SelectionTL.y := min(SelectionTL.y, f.FTopLeft.y - d);
-        SelectionBR.x := max(SelectionBR.x, f.FBottomRight.x + d);
-        SelectionBR.y := max(SelectionBR.y, f.FBottomRight.y + d);
+        Result.x := min(Result.x, f.FTopLeft.x - d);
+        Result.y := min(Result.y, f.FTopLeft.y - d);
       end;
       HasSelection := True;
     end;
   end;
+end;
 
-  if HasSelection then
+function GetSelectionBottomRight: TDoublePoint;
+var
+  HasSelection: boolean;
+  f: TFigure;
+  d: double;
+begin
+  HasSelection := false;
+  Result := DoublePoint(0,0);
+  for f in CanvasItems do
+  begin
+    if f.Selected then
+    begin
+      d := (f as TDrawableFigure).LineWidth / 2;
+      if not HasSelection then
+      begin
+        Result.x := f.FBottomRight.x + d;
+        Result.y := f.FBottomRight.y + d;
+      end
+      else
+      begin
+        Result.x := max(Result.x, f.FBottomRight.x + d);
+        Result.y := max(Result.y, f.FBottomRight.y + d);
+      end;
+      HasSelection := True;
+    end;
+  end;
+end;
+
+procedure DrawSelection(ACanvas: TCanvas);
+const
+  PADDING = 5;
+var
+  SelectionTL, SelectionBR: TDoublePoint;
+  CSelectionTL, CSelectionBR: TPoint;
+  CurrentVertex: TPoint;
+  f: TFigure;
+  d: double;
+  i: integer;
+begin
+  for f in CanvasItems do
+  begin
+    if f.Selected then
+    begin
+      for i := Low(f.FVertexes) to High(f.FVertexes) do
+      begin
+        CurrentVertex := WorldToCanvas(f.FVertexes[i]);
+        with ACanvas do
+        begin
+          Pen.Width := 1;
+          Pen.Style := psSolid;
+          Pen.Mode := pmCopy;
+          Brush.Style := bsSolid;
+          Rectangle(CurrentVertex.x - PADDING, CurrentVertex.y - PADDING,
+            CurrentVertex.x + PADDING, CurrentVertex.y + PADDING);
+          Pen.Mode := pmCopy;
+        end;
+      end;
+    end;
+  end;
+
+  SelectionTL := GetSelectionTopLeft;
+  SelectionBR := GetSelectionBottomRight;
+
+  if SelectionTL <> SelectionBR then
   begin
     CSelectionTL := WorldToCanvas(SelectionTL);
     CSelectionBR := WorldToCanvas(SelectionBR);
@@ -288,9 +352,9 @@ constructor TFillableFigure.Create(X, Y: double; ALineWidth: integer;
   ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
   AFillStyle: TBrushStyle);
 begin
-  SetLength(Vertexes, 2);
-  Vertexes[0] := DoublePoint(X, Y);
-  Vertexes[1] := Vertexes[0];
+  SetLength(FVertexes, 2);
+  FVertexes[0] := DoublePoint(X, Y);
+  FVertexes[1] := FVertexes[0];
   LineColor := ALineColor;
   LineWidth := ALineWidth;
   LineStyle := ALineStyle;
@@ -324,9 +388,9 @@ end;
 constructor TDrawableFigure.Create(X, Y: double; ALineWidth: integer;
   ALineColor: TColor; ALineStyle: TPenStyle);
 begin
-  SetLength(Vertexes, 2);
-  Vertexes[0] := DoublePoint(X, Y);
-  Vertexes[1] := Vertexes[0];
+  SetLength(FVertexes, 2);
+  FVertexes[0] := DoublePoint(X, Y);
+  FVertexes[1] := FVertexes[0];
   LineColor := ALineColor;
   LineWidth := ALineWidth;
   LineStyle := ALineStyle;
@@ -335,7 +399,7 @@ end;
 
 procedure TDrawableFigure.MouseMove(X, Y: integer);
 begin
-  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
+  FVertexes[High(FVertexes)] := CanvasToWorld(X, Y);
 end;
 
 function TDrawableFigure.UnderPoint(APoint: TDoublePoint): boolean;
@@ -351,11 +415,11 @@ var
 begin
   x0 := APoint.x;
   y0 := APoint.y;
-  for i := Low(Vertexes) to High(Vertexes) - 1 do
+  for i := Low(FVertexes) to High(FVertexes) - 1 do
   begin
     //Ax+By+C=0
-    p0 := Vertexes[i + 1];
-    p1 := Vertexes[i];
+    p0 := FVertexes[i + 1];
+    p1 := FVertexes[i];
     a := p0.y - p1.y;
     b := p1.x - p0.x;
     c := p0.x * p1.y - p1.x * p0.y;
@@ -392,7 +456,7 @@ begin
       if (abs(a * x0 + b * y0 + c) / Dist(p0, p1) <= d) and
         (x0 >= min(p0.x, p1.x) - d) and (x0 <= max(p0.x, p1.x) + d) and
         (y0 >= min(p0.y, p1.y) - d) and (y0 <= max(p0.y, p1.y) + d) then
-          exit(True);
+        exit(True);
     end;
   end;
   Result := False;
@@ -408,7 +472,7 @@ var
 begin
   inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle,
     AFillColor, AFillStyle);
-  SetLength(Vertexes, AVertexCount);
+  SetLength(FVertexes, AVertexCount);
   StartPoint := DoublePoint(X, Y);
   ScreenPoint := WorldToCanvas(X, Y);
   VertexCount := AVertexCount;
@@ -421,9 +485,9 @@ var
   CanvasVertexes: TPointList;
 begin
   SetCanvasStyles(ACanvas);
-  SetLength(CanvasVertexes, Length(Vertexes));
-  for i := Low(Vertexes) to High(Vertexes) do
-    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+  SetLength(CanvasVertexes, Length(FVertexes));
+  for i := Low(FVertexes) to High(FVertexes) do
+    CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
   ACanvas.Polygon(CanvasVertexes);
 end;
 
@@ -436,11 +500,11 @@ begin
   WorldPos := CanvasToWorld(X, Y);
   CurrentRotation := arctan2(WorldPos.y - StartPoint.y, WorldPos.x - StartPoint.x);
   Radius := Dist(StartPoint, WorldPos);
-  for i := Low(Vertexes) to High(Vertexes) do
+  for i := Low(FVertexes) to High(FVertexes) do
   begin
-    Vertexes[i].x := StartPoint.x + Radius * cos(CurrentRotation +
+    FVertexes[i].x := StartPoint.x + Radius * cos(CurrentRotation +
       (i * 2 * pi / VertexCount));
-    Vertexes[i].y := StartPoint.y + Radius * sin(CurrentRotation +
+    FVertexes[i].y := StartPoint.y + Radius * sin(CurrentRotation +
       (i * 2 * pi / VertexCount));
   end;
 end;
@@ -453,8 +517,8 @@ var
   i: integer;
 begin
   SetLength(CanvasVertexes, VertexCount);
-  for i := Low(Vertexes) to High(Vertexes) do
-    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+  for i := Low(FVertexes) to High(FVertexes) do
+    CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
   RegionFigure := CreatePolygonRgn(CanvasVertexes[0], VertexCount, WINDING);
   CanvasPoint := WorldToCanvas(APoint);
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
@@ -478,8 +542,8 @@ var
   CanvasTopLeft, CanvasBottomRight: TPoint;
 begin
   SetCanvasStyles(ACanvas);
-  CanvasTopLeft := WorldToCanvas(Vertexes[0].x, Vertexes[0].y);
-  CanvasBottomRight := WorldToCanvas(Vertexes[1].x, Vertexes[1].y);
+  CanvasTopLeft := WorldToCanvas(FVertexes[0].x, FVertexes[0].y);
+  CanvasBottomRight := WorldToCanvas(FVertexes[1].x, FVertexes[1].y);
   ACanvas.RoundRect(CanvasTopLeft.x, CanvasTopLeft.y,
     CanvasBottomRight.x, CanvasBottomRight.y, FRoundX * 2, FRoundY * 2);
 end;
@@ -494,16 +558,15 @@ var
   d: integer;
 begin
   SetLength(CanvasVertexes, 2);
-  CanvasVertexes[0] := WorldToCanvas(Vertexes[0]);
-  CanvasVertexes[1] := WorldToCanvas(Vertexes[1]);
+  CanvasVertexes[0] := WorldToCanvas(FVertexes[0]);
+  CanvasVertexes[1] := WorldToCanvas(FVertexes[1]);
   d := LineWidth div 2 + PADDING;
 
   RegionFigure := CreateRoundRectRgn(
-      min(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
-      min(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
-      max(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
-      max(CanvasVertexes[0].y, CanvasVertexes[1].y) + d,
-      FRoundX * 2, FRoundY * 2);
+    min(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
+    min(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
+    max(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
+    max(CanvasVertexes[0].y, CanvasVertexes[1].y) + d, FRoundX * 2, FRoundY * 2);
   CanvasPoint := WorldToCanvas(APoint);
   if FillStyle = bsClear then
   begin
@@ -511,8 +574,7 @@ begin
       max(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
       max(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
       min(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
-      min(CanvasVertexes[0].y, CanvasVertexes[1].y) + d,
-      FRoundX * 2, FRoundY * 2);
+      min(CanvasVertexes[0].y, CanvasVertexes[1].y) + d, FRoundX * 2, FRoundY * 2);
     CombineRgn(RegionFigure, RegionFigure, RegionInner, RGN_DIFF);
     DeleteObject(RegionInner);
   end;
@@ -526,8 +588,8 @@ function TFigure.FTopLeft: TDoublePoint;
 var
   i: TDoublePoint;
 begin
-  Result := Vertexes[0];
-  for i in Vertexes do
+  Result := FVertexes[0];
+  for i in FVertexes do
   begin
     Result.x := min(Result.x, i.x);
     Result.y := min(Result.y, i.y);
@@ -538,8 +600,8 @@ function TFigure.FBottomRight: TDoublePoint;
 var
   i: TDoublePoint;
 begin
-  Result := Vertexes[0];
-  for i in Vertexes do
+  Result := FVertexes[0];
+  for i in FVertexes do
   begin
     Result.x := max(Result.x, i.x);
     Result.y := max(Result.y, i.y);
@@ -556,18 +618,49 @@ begin
     (RectBR.x >= FigureBR.x) and (RectBR.y >= FigureBR.y);
 end;
 
+function TFigure.GetVertexIndexAtPos(APoint: TDoublePoint): integer;
+const
+  PADDING = 5;
+var
+  i: integer;
+begin
+  Result := -1;
+  for i := High(FVertexes) downto Low(FVertexes) do
+  begin
+    if (abs(APoint.x - FVertexes[i].x) <= PADDING) and
+      (abs(APoint.y - FVertexes[i].y) <= PADDING) then
+      Exit(i);
+  end;
+end;
+
+procedure TFigure.MoveFigure(dx, dy: double);
+var
+  i: integer;
+begin
+  for i := Low(FVertexes) to High(FVertexes) do
+  begin
+    FVertexes[i].x := FVertexes[i].x + dx;
+    FVertexes[i].y := FVertexes[i].y + dy;
+  end;
+end;
+
+procedure TFigure.MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint);
+begin
+  FVertexes[VertexIndex] := ANewPos;
+end;
+
 { TRegionSelection }
 
 constructor TRegionSelection.Create(X, Y: double);
 begin
-  SetLength(Vertexes, 2);
-  Vertexes[0] := DoublePoint(X, Y);
-  Vertexes[1] := Vertexes[0];
+  SetLength(FVertexes, 2);
+  FVertexes[0] := DoublePoint(X, Y);
+  FVertexes[1] := FVertexes[0];
 end;
 
 procedure TRegionSelection.MouseMove(X, Y: integer);
 begin
-  Vertexes[1] := CanvasToWorld(X, Y);
+  FVertexes[1] := CanvasToWorld(X, Y);
 end;
 
 procedure TRegionSelection.Draw(ACanvas: TCanvas);
@@ -576,8 +669,8 @@ const
 var
   TopLeft, BottomRight: TPoint;
 begin
-  TopLeft := WorldToCanvas(Vertexes[0]);
-  BottomRight := WorldToCanvas(Vertexes[1]);
+  TopLeft := WorldToCanvas(FVertexes[0]);
+  BottomRight := WorldToCanvas(FVertexes[1]);
 
   if Dist(TopLeft, BottomRight) >= eps then
   begin
@@ -602,23 +695,23 @@ var
   i: integer;
 begin
   SetCanvasStyles(ACanvas);
-  SetLength(CanvasVertexes, Length(Vertexes));
-  for i := Low(Vertexes) to High(Vertexes) do
-    CanvasVertexes[i] := WorldToCanvas(Vertexes[i]);
+  SetLength(CanvasVertexes, Length(FVertexes));
+  for i := Low(FVertexes) to High(FVertexes) do
+    CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
   ACanvas.Polyline(CanvasVertexes);
 end;
 
 procedure TPolyLine.MouseMove(X, Y: integer);
 begin
-  SetLength(Vertexes, Length(Vertexes) + 1);
-  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
+  SetLength(FVertexes, Length(FVertexes) + 1);
+  FVertexes[High(FVertexes)] := CanvasToWorld(X, Y);
 end;
 
 { TLine }
 
 procedure TLine.MouseMove(X, Y: integer);
 begin
-  Vertexes[High(Vertexes)] := CanvasToWorld(X, Y);
+  FVertexes[High(FVertexes)] := CanvasToWorld(X, Y);
 end;
 
 { TRectangle }
@@ -628,8 +721,8 @@ var
   CanvasTopLeft, CanvasBottomRight: TPoint;
 begin
   SetCanvasStyles(ACanvas);
-  CanvasTopLeft := WorldToCanvas(Vertexes[0].x, Vertexes[0].y);
-  CanvasBottomRight := WorldToCanvas(Vertexes[1].x, Vertexes[1].y);
+  CanvasTopLeft := WorldToCanvas(FVertexes[0].x, FVertexes[0].y);
+  CanvasBottomRight := WorldToCanvas(FVertexes[1].x, FVertexes[1].y);
   ACanvas.Rectangle(CanvasTopLeft.x, CanvasTopLeft.y,
     CanvasBottomRight.x, CanvasBottomRight.y);
 end;
@@ -644,21 +737,19 @@ var
   d: integer;
 begin
   SetLength(CanvasVertexes, 2);
-  CanvasVertexes[0] := WorldToCanvas(Vertexes[0]);
-  CanvasVertexes[1] := WorldToCanvas(Vertexes[1]);
+  CanvasVertexes[0] := WorldToCanvas(FVertexes[0]);
+  CanvasVertexes[1] := WorldToCanvas(FVertexes[1]);
   d := LineWidth div 2 + PADDING;
 
   CanvasPoint := WorldToCanvas(APoint);
-  RegionFigure := CreateRectRgn(
-    min(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
-    min(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
+  RegionFigure := CreateRectRgn(min(CanvasVertexes[0].x, CanvasVertexes[1].x) -
+    d, min(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
     max(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
     max(CanvasVertexes[0].y, CanvasVertexes[1].y) + d);
   if FillStyle = bsClear then
   begin
-    RegionInner := CreateRectRgn(
-      max(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
-      max(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
+    RegionInner := CreateRectRgn(max(CanvasVertexes[0].x, CanvasVertexes[1].x) -
+      d, max(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
       min(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
       min(CanvasVertexes[0].y, CanvasVertexes[1].y) + d);
     CombineRgn(RegionFigure, RegionFigure, RegionInner, RGN_DIFF);
@@ -676,8 +767,8 @@ var
   CanvasTopLeft, CanvasBottomRight: TPoint;
 begin
   SetCanvasStyles(ACanvas);
-  CanvasTopLeft := WorldToCanvas(Vertexes[0].x, Vertexes[0].y);
-  CanvasBottomRight := WorldToCanvas(Vertexes[1].x, Vertexes[1].y);
+  CanvasTopLeft := WorldToCanvas(FVertexes[0].x, FVertexes[0].y);
+  CanvasBottomRight := WorldToCanvas(FVertexes[1].x, FVertexes[1].y);
   ACanvas.Ellipse(CanvasTopLeft.x, CanvasTopLeft.y,
     CanvasBottomRight.x, CanvasBottomRight.y);
 end;
@@ -692,16 +783,17 @@ var
   d: integer;
 begin
   SetLength(CanvasVertexes, 2);
-  CanvasVertexes[0] := WorldToCanvas(Vertexes[0]);
-  CanvasVertexes[1] := WorldToCanvas(Vertexes[1]);
+  CanvasVertexes[0] := WorldToCanvas(FVertexes[0]);
+  CanvasVertexes[1] := WorldToCanvas(FVertexes[1]);
   d := LineWidth div 2 + PADDING;
   CanvasPoint := WorldToCanvas(APoint);
 
   RegionFigure := CreateEllipticRgn(
-      min(CanvasVertexes[0].x - d, CanvasVertexes[1].x - d),
-      min(CanvasVertexes[0].y - d, CanvasVertexes[1].y - d),
-      max(CanvasVertexes[0].x + d, CanvasVertexes[1].x + d),
-      max(CanvasVertexes[0].y + d, CanvasVertexes[1].y + d));
+    min(CanvasVertexes[0].x - d, CanvasVertexes[1].x - d),
+    min(CanvasVertexes[0].y - d, CanvasVertexes[1].y - d),
+    max(CanvasVertexes[0].x + d, CanvasVertexes[1].x + d),
+    max(CanvasVertexes[0].y + d, CanvasVertexes[1].y + d));
+
   if FillStyle = bsClear then
   begin
     RegionInner := CreateEllipticRgn(

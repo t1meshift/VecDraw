@@ -10,74 +10,79 @@ uses
 
 type
   TToolParam = class
-    private
-      FName: string;
-      procedure OnChangeControl(Sender: TObject); virtual; abstract;
-    public
-      property Name: string read FName;
-      function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
+  private
+    FName: string;
+    procedure OnChangeControl(Sender: TObject); virtual; abstract;
+  public
+    property Name: string read FName;
+    function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
   end;
+
   TToolParamList = array of TToolParam;
 
   { TIntegerParam }
 
   TIntegerParam = class(TToolParam)
-    private
-      FMinValue, FMaxValue: integer;
-      FValue: integer;
-      procedure FSetValue(AValue: integer);
-      procedure OnChangeControl(Sender: TObject); override;
-    public
-      constructor Create(AParamName: string; AMinValue, AMaxValue,
-        ADefaultValue: integer);
-      property Value: integer read FValue write FSetValue;
-      function ToControl(AParentPanel: TPanel): TControl; override;
+  private
+    FMinValue, FMaxValue: integer;
+    FValue: integer;
+    procedure FSetValue(AValue: integer);
+    procedure OnChangeControl(Sender: TObject); override;
+  public
+    constructor Create(AParamName: string;
+      AMinValue, AMaxValue, ADefaultValue: integer);
+    property Value: integer read FValue write FSetValue;
+    function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
   { TColorParam }
 
   TColorParam = class(TToolParam)
-    private
-      FValue: TColor;
-      procedure OnChangeControl(Sender: TObject); override;
-    public
-      constructor Create(AParamName: string; ADefaultValue: TColor);
-      property Value: TColor read FValue write FValue;
-      function ToControl(AParentPanel: TPanel): TControl; override;
+  private
+    FValue: TColor;
+    procedure OnChangeControl(Sender: TObject); override;
+  public
+    constructor Create(AParamName: string; ADefaultValue: TColor);
+    property Value: TColor read FValue write FValue;
+    function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
   { TLineStyleParam }
 
   TLineStyleParam = class(TToolParam)
-    private
-      FLineIndex: integer;
-      const FLineStyles: array[0..5] of TPenStyle = (psSolid, psClear, psDot,
-        psDash, psDashDot, psDashDotDot);
-      function FGetLineStyle: TPenStyle;
-      procedure OnChangeControl(Sender: TObject); override;
-      procedure FDrawItem(Control: TWinControl; Index: Integer; ARect: TRect;
-        State: TOwnerDrawState);
-    public
-      property Value: TPenStyle read FGetLineStyle;
-      constructor Create;
-      function ToControl(AParentPanel: TPanel): TControl; override;
+  private
+    FLineIndex: integer;
+  const
+    FLineStyles: array[0..5] of TPenStyle = (psSolid, psClear, psDot,
+      psDash, psDashDot, psDashDotDot);
+
+    function FGetLineStyle: TPenStyle;
+    procedure OnChangeControl(Sender: TObject); override;
+    procedure FDrawItem(Control: TWinControl; Index: integer;
+      ARect: TRect; State: TOwnerDrawState);
+  public
+    property Value: TPenStyle read FGetLineStyle;
+    constructor Create;
+    function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
   { TFillStyleParam }
 
   TFillStyleParam = class(TToolParam)
-    private
-      FFillIndex: integer;
-      const FFillStyles: array[0..7] of TBrushStyle = (bsSolid, bsClear,
+  private
+    FFillIndex: integer;
+  const
+    FFillStyles: array[0..7] of TBrushStyle = (bsSolid, bsClear,
       bsHorizontal, bsVertical, bsFDiagonal, bsBDiagonal, bsCross, bsDiagCross);
-      function FGetFillStyle: TBrushStyle;
-      procedure OnChangeControl(Sender: TObject); override;
-      procedure FDrawItem(Control: TWinControl; Index: Integer; ARect: TRect;
-        State: TOwnerDrawState);
-    public
-      property Value: TBrushStyle read FGetFillStyle;
-      constructor Create;
-      function ToControl(AParentPanel: TPanel): TControl; override;
+
+    function FGetFillStyle: TBrushStyle;
+    procedure OnChangeControl(Sender: TObject); override;
+    procedure FDrawItem(Control: TWinControl; Index: integer;
+      ARect: TRect; State: TOwnerDrawState);
+  public
+    property Value: TBrushStyle read FGetFillStyle;
+    constructor Create;
+    function ToControl(AParentPanel: TPanel): TControl; override;
   end;
 
 implementation
@@ -123,8 +128,8 @@ begin
   FSetValue((Sender as TSpinEdit).Value);
 end;
 
-constructor TIntegerParam.Create(AParamName: string; AMinValue, AMaxValue,
-  ADefaultValue: integer);
+constructor TIntegerParam.Create(AParamName: string;
+  AMinValue, AMaxValue, ADefaultValue: integer);
 begin
   if AMinValue > AMaxValue then
     raise ERangeError.Create('Min > max');
@@ -159,7 +164,7 @@ begin
   FFillIndex := (Sender as TComboBox).ItemIndex;
 end;
 
-procedure TFillStyleParam.FDrawItem(Control: TWinControl; Index: Integer;
+procedure TFillStyleParam.FDrawItem(Control: TWinControl; Index: integer;
   ARect: TRect; State: TOwnerDrawState);
 begin
   with (Control as TComboBox).Canvas do
@@ -168,11 +173,10 @@ begin
     Pen.Color := clBlack;
     Pen.Style := psSolid;
     Pen.Width := 1;
+    Brush.Color := clRed;
     Brush.Style := FFillStyles[Index];
-    if Index <> 1 then
-      Brush.Color := clBlack;
-    Rectangle(ARect.Left + 1, ARect.Top + 1, ARect.Right - 1,
-      ARect.Bottom - 1);
+    Rectangle(ARect.Left + 2, ARect.Top + 2, ARect.Right - 2,
+      ARect.Bottom - 2);
   end;
 end;
 
@@ -199,7 +203,7 @@ begin
       WriteStr(s, i);
       Items.Add(s);
     end;
-    ReadOnly := true;
+    ReadOnly := True;
     ItemIndex := FFillIndex;
   end;
 end;
@@ -216,7 +220,7 @@ begin
   FLineIndex := (Sender as TComboBox).ItemIndex;
 end;
 
-procedure TLineStyleParam.FDrawItem(Control: TWinControl; Index: Integer;
+procedure TLineStyleParam.FDrawItem(Control: TWinControl; Index: integer;
   ARect: TRect; State: TOwnerDrawState);
 begin
   with (Control as TComboBox).Canvas do
@@ -253,10 +257,9 @@ begin
       WriteStr(s, i);
       Items.Add(s);
     end;
-    ReadOnly := true;
+    ReadOnly := True;
     ItemIndex := FLineIndex;
   end;
 end;
 
 end.
-

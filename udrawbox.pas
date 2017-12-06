@@ -43,7 +43,7 @@ type
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
-      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+      WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
     procedure MoveOnBottomMenuItemClick(Sender: TObject);
     procedure MoveOnTopMenuItemClick(Sender: TObject);
     procedure RemoveSelectionMenuItemClick(Sender: TObject);
@@ -54,16 +54,16 @@ type
     procedure ScaleFloatSpinChange(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
     procedure MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
+      Shift: TShiftState; X, Y: integer);
+    procedure MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
+      X, Y: integer);
     procedure MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+      Shift: TShiftState; X, Y: integer);
     procedure MainPaintBoxPaint(Sender: TObject);
     procedure AboutMenuItemClick(Sender: TObject);
     procedure ExitMenuItemClick(Sender: TObject);
     procedure ScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
-      var ScrollPos: Integer);
+      var ScrollPos: integer);
 
   private
     { private declarations }
@@ -136,13 +136,13 @@ var
   CurrentIcon: TPicture;
   IconsPerRow: integer;
 begin
-  DrawForm.DoubleBuffered := true;
+  DrawForm.DoubleBuffered := True;
   DrawForm.Caption := ApplicationName;
-  IsDrawing := false;
-  IconsPerRow := ToolsPanel.Width div
-    (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
+  IsDrawing := False;
+  IconsPerRow := ToolsPanel.Width div (TOOL_BUTTON_SIZE +
+    TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
 
-  for i:=Low(ToolsBase) to High(ToolsBase) do
+  for i := Low(ToolsBase) to High(ToolsBase) do
   begin
     b := TSpeedButton.Create(ToolsPanel);
     b.Parent := ToolsPanel;
@@ -157,9 +157,9 @@ begin
     CurrentIcon.Free;
 
     b.Left := (i mod IconsPerRow) * (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
-              TOOL_BUTTON_PADDING;
-    b.Top  := (i div IconsPerRow) * (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
-              TOOL_BUTTON_PADDING;
+      TOOL_BUTTON_PADDING;
+    b.Top := (i div IconsPerRow) * (TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN) +
+      TOOL_BUTTON_PADDING;
     b.Width := TOOL_BUTTON_SIZE + TOOL_BUTTON_MARGIN;
     b.Height := b.Width;
 
@@ -180,12 +180,12 @@ begin
 end;
 
 procedure TDrawForm.MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
-  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+  WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
 begin
   if WheelDelta > 0 then
-    ZoomPoint(CanvasToWorld(MousePos), Scale*2)
+    ZoomPoint(CanvasToWorld(MousePos), Scale * 2)
   else
-    ZoomPoint(CanvasToWorld(MousePos), Scale/2);
+    ZoomPoint(CanvasToWorld(MousePos), Scale / 2);
   SetScrollBars;
   MainPaintBox.Invalidate;
 end;
@@ -219,14 +219,14 @@ var
   NewScale: double;
 begin
   CalculateWorldBorders;
-  if (WorldTopLeft.x <> WorldBottomRight.x) and
-    (WorldTopLeft.y <> WorldBottomRight.y) then
+  if (WorldTopLeft.x <> WorldBottomRight.x) and (WorldTopLeft.y <>
+    WorldBottomRight.y) then
   begin
     NewScale := Min(CanvasWidth / (WorldBottomRight.x - WorldTopLeft.x + 2),
       CanvasHeight / (WorldBottomRight.y - WorldTopLeft.y + 2));
     SetScale(NewScale);
-    CenterToPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x)/2,
-      (WorldBottomRight.y + WorldTopLeft.y)/2));
+    CenterToPoint(DoublePoint((WorldBottomRight.x + WorldTopLeft.x) / 2,
+      (WorldBottomRight.y + WorldTopLeft.y) / 2));
     SetScrollBars;
     MainPaintBox.Invalidate;
   end;
@@ -239,24 +239,22 @@ var
 begin
   CanvasCorner := CanvasToWorld(CanvasWidth, CanvasHeight);
 
-  HorMin := Round(Min(CanvasOffset.x - CANVAS_OFFSET_BORDER_SIZE / Scale,
-    -CANVAS_OFFSET_BORDER_SIZE / Scale));
-  HorMax := Round(Max(CanvasCorner.x + CANVAS_OFFSET_BORDER_SIZE / Scale,
-    CanvasWidth + CANVAS_OFFSET_BORDER_SIZE / Scale));
-  VerMin := Round(Min(CanvasOffset.y - CANVAS_OFFSET_BORDER_SIZE / Scale,
-    -CANVAS_OFFSET_BORDER_SIZE / Scale));
-  VerMax := Round(Max(CanvasCorner.y + CANVAS_OFFSET_BORDER_SIZE / Scale,
-    CanvasHeight + CANVAS_OFFSET_BORDER_SIZE / Scale));
+  HorMin := Round(Min(CanvasOffset.x - CANVAS_OFFSET_BORDER_SIZE /
+    Scale, -CANVAS_OFFSET_BORDER_SIZE / Scale));
+  HorMax := Round(Max(CanvasCorner.x + CANVAS_OFFSET_BORDER_SIZE /
+    Scale, CanvasWidth + CANVAS_OFFSET_BORDER_SIZE / Scale));
+  VerMin := Round(Min(CanvasOffset.y - CANVAS_OFFSET_BORDER_SIZE /
+    Scale, -CANVAS_OFFSET_BORDER_SIZE / Scale));
+  VerMax := Round(Max(CanvasCorner.y + CANVAS_OFFSET_BORDER_SIZE /
+    Scale, CanvasHeight + CANVAS_OFFSET_BORDER_SIZE / Scale));
 
   CalculateWorldBorders;
-  HorMin := Min(HorMin, Round(WorldTopLeft.x - CANVAS_OFFSET_BORDER_SIZE
-    / Scale));
-  VerMin := Min(VerMin, Round(WorldTopLeft.y - CANVAS_OFFSET_BORDER_SIZE
-    / Scale));
-  HorMax := Max(HorMax, Round(WorldBottomRight.x + CANVAS_OFFSET_BORDER_SIZE
-    / Scale));
-  VerMax := Max(VerMax, Round(WorldBottomRight.y + CANVAS_OFFSET_BORDER_SIZE
-    / Scale));
+  HorMin := Min(HorMin, Round(WorldTopLeft.x - CANVAS_OFFSET_BORDER_SIZE / Scale));
+  VerMin := Min(VerMin, Round(WorldTopLeft.y - CANVAS_OFFSET_BORDER_SIZE / Scale));
+  HorMax := Max(HorMax, Round(WorldBottomRight.x +
+    CANVAS_OFFSET_BORDER_SIZE / Scale));
+  VerMax := Max(VerMax, Round(WorldBottomRight.y +
+    CANVAS_OFFSET_BORDER_SIZE / Scale));
 
   HorizontalScrollBar.SetParams(Round(CanvasOffset.x), HorMin, HorMax,
     Round(CanvasWidth / Scale));
@@ -293,7 +291,7 @@ var
 begin
   b := Sender as TSpeedButton;
   CurrentTool := ToolsBase[b.Tag];
-  b.Down := true;
+  b.Down := True;
 
   ToolParamsPanel.DestroyComponents;
   ParamsList := CurrentTool.GetParams;
@@ -302,7 +300,7 @@ begin
     for i := High(ParamsList) downto Low(ParamsList) do
     begin
       CurrParam := ParamsList[i];
-      ToolParamsPanel.Visible := false;
+      ToolParamsPanel.Visible := False;
       c := CurrParam.ToControl(ToolParamsPanel);
       c.Align := alBottom;
 
@@ -310,25 +308,25 @@ begin
       l.Parent := ToolParamsPanel;
       l.Caption := CurrParam.Name;
       l.Align := alBottom;
-      ToolParamsPanel.Visible := true;
+      ToolParamsPanel.Visible := True;
     end;
   end;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
+  Shift: TShiftState; X, Y: integer);
 begin
-  IsDrawing := true;
+  IsDrawing := True;
   CurrentTool.MouseDown(X, Y, Button);
   if CurrentTool.Figure = nil then
-    IsDrawing := false;
+    IsDrawing := False;
 
   MainPaintBox.Invalidate;
   SetScrollBars;
 end;
 
 procedure TDrawForm.MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
-  X, Y: Integer);
+  X, Y: integer);
 begin
   CurrentTool.MouseMove(X, Y, Shift);
   MainPaintBox.Invalidate;
@@ -336,18 +334,18 @@ begin
 end;
 
 procedure TDrawForm.MainPaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
+  Shift: TShiftState; X, Y: integer);
 begin
   SetLength(CanvasItems, Length(CanvasItems) + 1);
   CanvasItems[High(CanvasItems)] := CurrentTool.MouseUp(X, Y);
   if CanvasItems[High(CanvasItems)] = nil then
   begin
     SetLength(CanvasItems, Max(Length(CanvasItems) - 1, 0));
-    IsDrawing := false;
+    IsDrawing := False;
   end;
   if IsDrawing then
   begin
-    IsDrawing := false;
+    IsDrawing := False;
   end;
   MainPaintBox.Invalidate;
 end;
@@ -367,7 +365,7 @@ begin
     Pen.Color := clBlack;
     Pen.Style := psSolid;
     Pen.Width := 1;
-    WorldZeroTL := WorldToCanvas(0,0);
+    WorldZeroTL := WorldToCanvas(0, 0);
     WorldZeroBR := WorldToCanvas(CanvasWidth, CanvasHeight);
     Rectangle(WorldZeroTL.x, WorldZeroTL.y, WorldZeroBR.x, WorldZeroBR.y);
     {$endif}
@@ -408,8 +406,8 @@ begin
   DrawForm.Close;
 end;
 
-procedure TDrawForm.ScrollBarScroll(Sender: TObject;
-  ScrollCode: TScrollCode; var ScrollPos: Integer);
+procedure TDrawForm.ScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
+  var ScrollPos: integer);
 begin
   CanvasOffset.x := HorizontalScrollBar.Position;
   CanvasOffset.y := VerticalScrollBar.Position;

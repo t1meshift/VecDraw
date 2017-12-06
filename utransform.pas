@@ -8,11 +8,16 @@ uses
   Classes, SysUtils;
 
 type
+
+  { TDoublePoint }
+
   TDoublePoint = record
     x, y: double;
   end;
+  PDoublePoint = ^TDoublePoint;
 
 function DoublePoint(AX, AY: double): TDoublePoint;
+operator <> (p1, p2: TDoublePoint): boolean;
 function Dist(P1, P2: TPoint): double; overload; inline;
 function Dist(P1, P2: TDoublePoint): double; overload; inline;
 
@@ -44,6 +49,11 @@ begin
     x := AX;
     y := AY;
   end;
+end;
+
+operator<>(p1, p2: TDoublePoint): boolean;
+begin
+  Result := (p1.x <> p2.x) or (p1.y <> p2.y);
 end;
 
 function Dist(P1, P2: TPoint): double; inline;
@@ -87,7 +97,7 @@ end;
 procedure SetScale(AScale: double);
 begin
   if AScale < ZOOM_MIN then
-     Scale := ZOOM_MIN
+    Scale := ZOOM_MIN
   else if AScale > ZOOM_MAX then
     Scale := ZOOM_MAX
   else
@@ -131,12 +141,10 @@ begin
   CanvasOffset.y := APoint.y - (CanvasCorner.y - CanvasOffset.y) / 2;
 end;
 
-
-
 initialization
 
-CanvasOffset := DoublePoint(0,0);
-Scale := 1.0;
+  CanvasOffset := DoublePoint(0, 0);
+  Scale := 1.0;
 
 end.
 
