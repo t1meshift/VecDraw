@@ -28,10 +28,11 @@ type
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
     procedure MouseMove(X, Y: integer); virtual; abstract;
     function InRect(RectTL, RectBR: TDoublePoint): boolean;
-    function GetVertexIndexAtPos(APoint: TDoublePoint): integer;
-    function UnderPoint(APoint: TDoublePoint): boolean; virtual; abstract;
+    function GetVertexIndexAtPos(const APoint: TPoint): integer;
+    function GetVertexIndexAtPos(const APoint: TDoublePoint): integer;
+    function UnderPoint(const APoint: TDoublePoint): boolean; virtual; abstract;
     procedure MoveFigure(dx, dy: double);
-    procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint);
+    procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint); virtual;
   end;
 
   TFigureList = array of TFigure;
@@ -51,8 +52,9 @@ type
     constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
       ALineStyle: TPenStyle);
     procedure MouseMove(X, Y: integer); override;
-    function UnderPoint(APoint: TDoublePoint): boolean; override;
+    function UnderPoint(const APoint: TDoublePoint): boolean; override;
     property LineWidth: integer read FLineWidth write SetLineWidth;
+    property LineWidthCanvas: integer read GetCanvasLineWidth;
     property LineColor: TColor read FLineColor write FLineColor;
     property LineStyle: TPenStyle read FLineStyle write FLineStyle;
   end;
@@ -99,7 +101,7 @@ type
   TRectangle = class(TFillableFigure)
   public
     procedure Draw(ACanvas: TCanvas); override;
-    function UnderPoint(APoint: TDoublePoint): boolean; override;
+    function UnderPoint(const APoint: TDoublePoint): boolean; override;
   end;
 
   { TRoundRect }
@@ -112,7 +114,7 @@ type
       ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle;
       ARoundX, ARoundY: integer);
     procedure Draw(ACanvas: TCanvas); override;
-    function UnderPoint(APoint: TDoublePoint): boolean; override;
+    function UnderPoint(const APoint: TDoublePoint): boolean; override;
     property RoundX: integer read FRoundX write FRoundX;
     property RoundY: integer read FRoundY write FRoundY;
   end;
@@ -122,7 +124,7 @@ type
   TEllipse = class(TFillableFigure)
   public
     procedure Draw(ACanvas: TCanvas); override;
-    function UnderPoint(APoint: TDoublePoint): boolean; override;
+    function UnderPoint(const APoint: TDoublePoint): boolean; override;
   end;
 
   { TPolygon }
@@ -137,7 +139,8 @@ type
       AVertexCount: integer);
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
-    function UnderPoint(APoint: TDoublePoint): boolean; override;
+    function UnderPoint(const APoint: TDoublePoint): boolean; override;
+    procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint); override;
     property VertexCount: integer read FVertexCount write FVertexCount;
   end;
 
@@ -161,8 +164,8 @@ var
   f: TFigure;
   d: double;
 begin
-  HasSelection := false;
-  Result := DoublePoint(0,0);
+  HasSelection := False;
+  Result := DoublePoint(0, 0);
   for f in CanvasItems do
   begin
     if f.Selected then
@@ -189,8 +192,8 @@ var
   f: TFigure;
   d: double;
 begin
-  HasSelection := false;
-  Result := DoublePoint(0,0);
+  HasSelection := False;
+  Result := DoublePoint(0, 0);
   for f in CanvasItems do
   begin
     if f.Selected then
@@ -219,7 +222,6 @@ var
   CSelectionTL, CSelectionBR, CFigureTL, CFigureBR: TPoint;
   CurrentVertex: TPoint;
   f: TFigure;
-  d: double;
   i: integer;
 begin
   for f in CanvasItems do
@@ -412,7 +414,7 @@ begin
   FVertexes[High(FVertexes)] := CanvasToWorld(X, Y);
 end;
 
-function TDrawableFigure.UnderPoint(APoint: TDoublePoint): boolean;
+function TDrawableFigure.UnderPoint(const APoint: TDoublePoint): boolean;
 const
   eps = 0.01;
   PADDING = 5;
@@ -433,7 +435,7 @@ begin
     a := p0.y - p1.y;
     b := p1.x - p0.x;
     c := p0.x * p1.y - p1.x * p0.y;
-    d := LineWidth div 2 + PADDING;
+    d := LineWidth / 2 + PADDING / Scale;
     if (abs(a) < eps) and (abs(b) < eps) then
     begin
       //just a point
@@ -519,7 +521,7 @@ begin
   end;
 end;
 
-function TPolygon.UnderPoint(APoint: TDoublePoint): boolean;
+function TPolygon.UnderPoint(const APoint: TDoublePoint): boolean;
 var
   RegionFigure: HRGN;
   CanvasVertexes: TPointList;
@@ -533,6 +535,14 @@ begin
   CanvasPoint := WorldToCanvas(APoint);
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
+end;
+
+procedure TPolygon.MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint);
+var
+  CanvasNewPos: TPoint;
+begin
+  CanvasNewPos := WorldToCanvas(ANewPos);
+  MouseMove(CanvasNewPos.x, CanvasNewPos.y);
 end;
 
 { TRoundRect }
@@ -558,7 +568,7 @@ begin
     CanvasBottomRight.x, CanvasBottomRight.y, FRoundX * 2, FRoundY * 2);
 end;
 
-function TRoundRect.UnderPoint(APoint: TDoublePoint): boolean;
+function TRoundRect.UnderPoint(const APoint: TDoublePoint): boolean;
 const
   PADDING = 5;
 var
@@ -570,7 +580,7 @@ begin
   SetLength(CanvasVertexes, 2);
   CanvasVertexes[0] := WorldToCanvas(FVertexes[0]);
   CanvasVertexes[1] := WorldToCanvas(FVertexes[1]);
-  d := LineWidth div 2 + PADDING;
+  d := LineWidthCanvas div 2 + PADDING;
 
   RegionFigure := CreateRoundRectRgn(
     min(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
@@ -628,19 +638,26 @@ begin
     (RectBR.x >= FigureBR.x) and (RectBR.y >= FigureBR.y);
 end;
 
-function TFigure.GetVertexIndexAtPos(APoint: TDoublePoint): integer;
+function TFigure.GetVertexIndexAtPos(const APoint: TPoint): integer;
 const
   PADDING = 5;
 var
   i: integer;
+  v: TPoint;
 begin
   Result := -1;
   for i := High(FVertexes) downto Low(FVertexes) do
   begin
-    if (abs(APoint.x - FVertexes[i].x) <= PADDING) and
-      (abs(APoint.y - FVertexes[i].y) <= PADDING) then
+    v := WorldToCanvas(FVertexes[i]);
+    if (abs(APoint.x - v.x) <= PADDING) and
+      (abs(APoint.y - v.y) <= PADDING) then
       Exit(i);
   end;
+end;
+
+function TFigure.GetVertexIndexAtPos(const APoint: TDoublePoint): integer;
+begin
+  Result := GetVertexIndexAtPos(WorldToCanvas(APoint));
 end;
 
 procedure TFigure.MoveFigure(dx, dy: double);
@@ -737,7 +754,7 @@ begin
     CanvasBottomRight.x, CanvasBottomRight.y);
 end;
 
-function TRectangle.UnderPoint(APoint: TDoublePoint): boolean;
+function TRectangle.UnderPoint(const APoint: TDoublePoint): boolean;
 const
   PADDING = 5;
 var
@@ -749,7 +766,7 @@ begin
   SetLength(CanvasVertexes, 2);
   CanvasVertexes[0] := WorldToCanvas(FVertexes[0]);
   CanvasVertexes[1] := WorldToCanvas(FVertexes[1]);
-  d := LineWidth div 2 + PADDING;
+  d := LineWidthCanvas div 2 + PADDING;
 
   CanvasPoint := WorldToCanvas(APoint);
   RegionFigure := CreateRectRgn(min(CanvasVertexes[0].x, CanvasVertexes[1].x) -
@@ -783,7 +800,7 @@ begin
     CanvasBottomRight.x, CanvasBottomRight.y);
 end;
 
-function TEllipse.UnderPoint(APoint: TDoublePoint): boolean;
+function TEllipse.UnderPoint(const APoint: TDoublePoint): boolean;
 const
   PADDING = 5;
 var
@@ -795,7 +812,7 @@ begin
   SetLength(CanvasVertexes, 2);
   CanvasVertexes[0] := WorldToCanvas(FVertexes[0]);
   CanvasVertexes[1] := WorldToCanvas(FVertexes[1]);
-  d := LineWidth div 2 + PADDING;
+  d := LineWidthCanvas div 2 + PADDING;
   CanvasPoint := WorldToCanvas(APoint);
 
   RegionFigure := CreateEllipticRgn(

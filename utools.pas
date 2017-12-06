@@ -175,6 +175,7 @@ begin
   DraggingVertexIndex := -1;
   IsFigureDraggable := False;
   DraggingVertexFigure := nil;
+  DragFigurePrevPoint := DoublePoint(0, 0);
 end;
 
 procedure TModifierTool.MouseDown(X, Y: integer; Button: TMouseButton);
@@ -206,43 +207,40 @@ begin
         SelectedFigures[High(SelectedFigures)] := f;
       end;
     end;
-  end;
 
-  if Length(SelectedFigures) > 0 then
-  begin
-    SelectionTL := GetSelectionTopLeft;
-    SelectionBR := GetSelectionBottomRight;
-    for i := High(SelectedFigures) downto Low(SelectedFigures) do
+    if Length(SelectedFigures) > 0 then
     begin
-      DraggingVertexIndex := SelectedFigures[i].GetVertexIndexAtPos(WorldStartCoord);
-      if DraggingVertexIndex <> -1 then
+      SelectionTL := GetSelectionTopLeft;
+      SelectionBR := GetSelectionBottomRight;
+      for i := High(SelectedFigures) downto Low(SelectedFigures) do
       begin
-        DraggingVertexFigure := SelectedFigures[i];
-        break;
+        DraggingVertexIndex := SelectedFigures[i].GetVertexIndexAtPos(FStartPoint);
+        if DraggingVertexIndex <> -1 then
+        begin
+          DraggingVertexFigure := SelectedFigures[i];
+          exit;
+        end;
       end;
       if (WorldStartCoord.x >= SelectionTL.x) and
         (WorldStartCoord.x <= SelectionBR.x) and
         (WorldStartCoord.y >= SelectionTL.y) and
         (WorldStartCoord.y <= SelectionBR.y) then
-      begin
-        IsFigureDraggable := True;
-        DragFigurePrevPoint := WorldStartCoord;
-        break;
-      end;
+        begin
+          DraggingVertexIndex := -1;
+          IsFigureDraggable := True;
+          DragFigurePrevPoint := WorldStartCoord;
+        end;
     end;
   end;
 end;
 
 procedure TModifierTool.MouseMove(X, Y: integer; Shift: TShiftState);
-const
-  eps = 16;
 var
   dx, dy: double;
   WorldCurrPoint: TDoublePoint;
   f: TFigure;
 begin
-  if (FMButton = mbLeft) and (Length(SelectedFigures) > 0) {and
-    (Dist(FStartPoint, Point(X, Y)) > eps)} then
+  if (FMButton = mbLeft) and (Length(SelectedFigures) > 0) then
   begin
     WorldCurrPoint := CanvasToWorld(X, Y);
     if DraggingVertexIndex <> -1 then
