@@ -216,7 +216,7 @@ const
   PADDING = 5;
 var
   SelectionTL, SelectionBR: TDoublePoint;
-  CSelectionTL, CSelectionBR: TPoint;
+  CSelectionTL, CSelectionBR, CFigureTL, CFigureBR: TPoint;
   CurrentVertex: TPoint;
   f: TFigure;
   d: double;
@@ -226,6 +226,17 @@ begin
   begin
     if f.Selected then
     begin
+      CFigureTL := WorldToCanvas(f.TopLeftBorder);
+      CFigureBR := WorldToCanvas(f.BottomRightBorder);
+      with ACanvas do
+      begin
+        Pen.Width := 2;
+        Pen.Style := psDash;
+        Pen.Mode := pmNot;
+        Brush.Style := bsClear;
+        Rectangle(CFigureTL.x, CFigureTL.y, CFigureBR.x, CFigureBR.y);
+        Pen.Mode := pmCopy;
+      end;
       for i := Low(f.FVertexes) to High(f.FVertexes) do
       begin
         CurrentVertex := WorldToCanvas(f.FVertexes[i]);
@@ -237,7 +248,6 @@ begin
           Brush.Style := bsSolid;
           Rectangle(CurrentVertex.x - PADDING, CurrentVertex.y - PADDING,
             CurrentVertex.x + PADDING, CurrentVertex.y + PADDING);
-          Pen.Mode := pmCopy;
         end;
       end;
     end;
