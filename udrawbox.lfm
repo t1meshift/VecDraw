@@ -13,7 +13,6 @@ object DrawForm: TDrawForm
   LCLVersion = '1.6.4.0'
   object MainPaintBox: TPaintBox
     AnchorSideTop.Control = Owner
-    Cursor = crCross
     Left = 120
     Height = 599
     Top = 0
@@ -196,6 +195,7 @@ object DrawForm: TDrawForm
       end
       object RemoveSelectionMenuItem: TMenuItem
         Caption = 'Remove selection'
+        ShortCut = 27
         OnClick = RemoveSelectionMenuItemClick
       end
       object DeleteSelectedMenuItem: TMenuItem

@@ -140,19 +140,22 @@ type
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
-    procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint); override;
     property VertexCount: integer read FVertexCount write FVertexCount;
   end;
 
 function GetSelectionTopLeft: TDoublePoint;
 function GetSelectionBottomRight: TDoublePoint;
 procedure DrawSelection(ACanvas: TCanvas);
+function GetSelectionVertexIndexAtPos(APoint: TPoint): integer;
+procedure ResizeSelection(VertexIndex: integer; ANewPos: TDoublePoint);
 procedure SelectAll;
 procedure RemoveSelection;
 procedure DeleteSelected;
 procedure MoveSelectedOnTop;
 procedure MoveSelectedOnBottom;
 
+const
+  PADDING = 5;
 var
   CanvasItems: TFigureList;
 
@@ -215,8 +218,6 @@ begin
 end;
 
 procedure DrawSelection(ACanvas: TCanvas);
-const
-  PADDING = 5;
 var
   SelectionTL, SelectionBR: TDoublePoint;
   CSelectionTL, CSelectionBR, CFigureTL, CFigureBR: TPoint;
@@ -271,6 +272,51 @@ begin
       Rectangle(CSelectionTL.x - PADDING, CSelectionTL.y - PADDING,
         CSelectionBR.x + PADDING, CSelectionBR.y + PADDING);
       Pen.Mode := pmCopy;
+      Pen.Width := 1;
+      Pen.Style := psSolid;
+      Brush.Style := bsSolid;
+      Rectangle(CSelectionBR.x, CSelectionBR.y,
+        CSelectionBR.x + 2*PADDING, CSelectionBR.y + 2*PADDING); //0th vertex
+    end;
+  end;
+end;
+
+function GetSelectionVertexIndexAtPos(APoint: TPoint): integer;
+var
+  CSelectionTL, CSelectionBR: TPoint;
+begin
+  Result := -1;
+  CSelectionTL := WorldToCanvas(GetSelectionTopLeft);
+  CSelectionBR := WorldToCanvas(GetSelectionBottomRight);
+  if (abs(APoint.x - CSelectionBR.x) <= 2*PADDING) and
+    (abs(APoint.y - CSelectionBR.y) <= 2*PADDING) then
+    Exit(0);
+end;
+
+procedure ResizeSelection(VertexIndex: integer; ANewPos: TDoublePoint);
+var
+  f: TFigure;
+  v: integer;
+  sx, sy, dx, dy: double;
+  Anchor, SelectionVertex: TDoublePoint;
+begin
+  case VertexIndex of
+    0:
+    begin
+      Anchor := GetSelectionTopLeft;
+      SelectionVertex := GetSelectionBottomRight;
+      sx := (Anchor.x - ANewPos.x) / (Anchor.x - SelectionVertex.x);
+      sy := (Anchor.y - ANewPos.y) / (Anchor.y - SelectionVertex.y);
+      for f in CanvasItems do
+      begin
+        if f.Selected then
+          for v := Low(f.Vertexes) to High(f.Vertexes) do
+          begin
+            dx := (f.Vertexes[v].x - Anchor.x) * sx;
+            dy := (f.Vertexes[v].y - Anchor.y) * sy;
+            f.MoveVertex(v, DoublePoint(Anchor.x + dx, Anchor.y + dy));
+          end;
+      end;
     end;
   end;
 end;
@@ -417,7 +463,6 @@ end;
 function TDrawableFigure.UnderPoint(const APoint: TDoublePoint): boolean;
 const
   eps = 0.01;
-  PADDING = 5;
 var
   i: integer;
   p0, p1: TDoublePoint;
@@ -537,14 +582,6 @@ begin
   DeleteObject(RegionFigure);
 end;
 
-procedure TPolygon.MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint);
-var
-  CanvasNewPos: TPoint;
-begin
-  CanvasNewPos := WorldToCanvas(ANewPos);
-  MouseMove(CanvasNewPos.x, CanvasNewPos.y);
-end;
-
 { TRoundRect }
 
 constructor TRoundRect.Create(X, Y: double; ALineWidth: integer;
@@ -569,8 +606,6 @@ begin
 end;
 
 function TRoundRect.UnderPoint(const APoint: TDoublePoint): boolean;
-const
-  PADDING = 5;
 var
   RegionFigure, RegionInner: HRGN;
   CanvasVertexes: TPointList;
@@ -639,8 +674,6 @@ begin
 end;
 
 function TFigure.GetVertexIndexAtPos(const APoint: TPoint): integer;
-const
-  PADDING = 5;
 var
   i: integer;
   v: TPoint;
@@ -755,8 +788,6 @@ begin
 end;
 
 function TRectangle.UnderPoint(const APoint: TDoublePoint): boolean;
-const
-  PADDING = 5;
 var
   RegionFigure, RegionInner: HRGN;
   CanvasVertexes: TPointList;
@@ -801,8 +832,6 @@ begin
 end;
 
 function TEllipse.UnderPoint(const APoint: TDoublePoint): boolean;
-const
-  PADDING = 5;
 var
   RegionFigure, RegionInner: HRGN;
   CanvasVertexes: TPointList;

@@ -150,6 +150,7 @@ type
   private
     SelectedFigures: TFigureList;
     IsFigureDraggable: boolean;
+    SelectionVertexDrag: boolean;
     DragFigurePrevPoint: TDoublePoint;
     DraggingVertexFigure: TFigure;
     DraggingVertexIndex: integer;
@@ -174,6 +175,7 @@ begin
   FMButton := mbExtra2;
   DraggingVertexIndex := -1;
   IsFigureDraggable := False;
+  SelectionVertexDrag := False;
   DraggingVertexFigure := nil;
   DragFigurePrevPoint := DoublePoint(0, 0);
 end;
@@ -214,6 +216,12 @@ begin
       SelectionBR := GetSelectionBottomRight;
       for i := High(SelectedFigures) downto Low(SelectedFigures) do
       begin
+        DraggingVertexIndex := GetSelectionVertexIndexAtPos(FStartPoint);
+        if DraggingVertexIndex <> -1 then
+        begin
+          SelectionVertexDrag := true;
+          exit;
+        end;
         DraggingVertexIndex := SelectedFigures[i].GetVertexIndexAtPos(FStartPoint);
         if DraggingVertexIndex <> -1 then
         begin
@@ -244,7 +252,10 @@ begin
   begin
     WorldCurrPoint := CanvasToWorld(X, Y);
     if DraggingVertexIndex <> -1 then
-      DraggingVertexFigure.MoveVertex(DraggingVertexIndex, WorldCurrPoint)
+      if SelectionVertexDrag then
+        ResizeSelection(DraggingVertexIndex, WorldCurrPoint)
+      else
+        DraggingVertexFigure.MoveVertex(DraggingVertexIndex, WorldCurrPoint)
     else
     if IsFigureDraggable then
     begin
@@ -264,6 +275,7 @@ begin
   SetLength(SelectedFigures, 0);
   FMButton := mbExtra2;
   IsFigureDraggable := False;
+  SelectionVertexDrag := False;
   DraggingVertexFigure := nil;
   Result := nil;
 end;
