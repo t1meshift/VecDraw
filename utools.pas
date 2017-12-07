@@ -184,8 +184,9 @@ procedure TModifierTool.MouseDown(X, Y: integer; Button: TMouseButton);
 var
   WorldStartCoord: TDoublePoint;
   SelectionTL, SelectionBR: TDoublePoint;
-  i: integer;
+  i, j: integer;
   f: TFigure;
+  HasSelectionOnTop: boolean;
 begin
   inherited MouseDown(X, Y, Button);
   WorldStartCoord := CanvasToWorld(FStartPoint);
@@ -197,11 +198,35 @@ begin
       f := CanvasItems[i];
       if (not f.Selected) and (f.UnderPoint(WorldStartCoord)) then
       begin
-        RemoveSelection;
-        f.Selected := True;
-        SetLength(SelectedFigures, 1);
-        SelectedFigures[0] := f;
-        break;
+        HasSelectionOnTop := false;
+        if Length(SelectedFigures) > 0 then
+        begin
+          SelectionTL := GetSelectionTopLeft;
+          SelectionBR := GetSelectionBottomRight;
+          DraggingVertexIndex := GetSelectionVertexIndexAtPos(FStartPoint);
+          if DraggingVertexIndex <> -1 then
+          begin
+            SelectionVertexDrag := true;
+            exit;
+          end;
+          if (SelectionTL.x - PADDING <= WorldStartCoord.x) and
+            (SelectionTL.y - PADDING <= WorldStartCoord.y) and
+            (SelectionBR.x + PADDING >= WorldStartCoord.x) and
+            (SelectionBR.y + PADDING >= WorldStartCoord.y) then
+          begin
+            HasSelectionOnTop := true;
+            break;
+          end;
+        end;
+
+        if not HasSelectionOnTop then
+        begin
+          RemoveSelection;
+          f.Selected := True;
+          SetLength(SelectedFigures, 1);
+          SelectedFigures[0] := f;
+          break;
+        end;
       end;
       if f.Selected then
       begin
@@ -253,7 +278,10 @@ begin
     WorldCurrPoint := CanvasToWorld(X, Y);
     if DraggingVertexIndex <> -1 then
       if SelectionVertexDrag then
-        ResizeSelection(DraggingVertexIndex, WorldCurrPoint)
+      begin
+        ResizeSelection(DraggingVertexIndex, WorldCurrPoint);
+        DraggingVertexIndex := GetSelectionVertexIndexAtPos(Point(X, Y));
+      end
       else
         DraggingVertexFigure.MoveVertex(DraggingVertexIndex, WorldCurrPoint)
     else

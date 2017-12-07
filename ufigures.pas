@@ -277,6 +277,12 @@ begin
       Brush.Style := bsSolid;
       Rectangle(CSelectionBR.x, CSelectionBR.y,
         CSelectionBR.x + 2*PADDING, CSelectionBR.y + 2*PADDING); //0th vertex
+      Rectangle(CSelectionTL.x, CSelectionTL.y,
+        CSelectionTL.x - 2*PADDING, CSelectionTL.y - 2*PADDING); //1st vertex
+      Rectangle(CSelectionTL.x, CSelectionBR.y,
+        CSelectionTL.x - 2*PADDING, CSelectionBR.y + 2*PADDING); //2nd vertex
+      Rectangle(CSelectionBR.x, CSelectionTL.y,
+        CSelectionBR.x + 2*PADDING, CSelectionTL.y - 2*PADDING); //3rd vertex
     end;
   end;
 end;
@@ -288,9 +294,26 @@ begin
   Result := -1;
   CSelectionTL := WorldToCanvas(GetSelectionTopLeft);
   CSelectionBR := WorldToCanvas(GetSelectionBottomRight);
-  if (abs(APoint.x - CSelectionBR.x) <= 2*PADDING) and
-    (abs(APoint.y - CSelectionBR.y) <= 2*PADDING) then
-    Exit(0);
+  if ((APoint.x - CSelectionBR.x) >= 0) and
+    ((APoint.x - CSelectionBR.x) <= 2*PADDING) and
+    ((APoint.y - CSelectionBR.y) >= 0) and
+    ((APoint.y - CSelectionBR.y) <= 2*PADDING) then
+    Exit(0); // Bottom Right
+  if ((APoint.x - CSelectionTL.x) <= 0) and
+    ((APoint.x - CSelectionTL.x) >= -2*PADDING) and
+    ((APoint.y - CSelectionTL.y) <= 0) and
+    ((APoint.y - CSelectionTL.y) >= -2*PADDING) then
+    Exit(1); // Top Left
+  if ((APoint.x - CSelectionTL.x) <= 0) and
+    ((APoint.x - CSelectionTL.x) >= -2*PADDING) and
+    ((APoint.y - CSelectionBR.y) >= 0) and
+    ((APoint.y - CSelectionBR.y) <= 2*PADDING) then
+    Exit(2); // Bottom Left
+  if ((APoint.x - CSelectionBR.x) >= 0) and
+    ((APoint.x - CSelectionBR.x) <= 2*PADDING) and
+    ((APoint.y - CSelectionTL.y) <= 0) and
+    ((APoint.y - CSelectionTL.y) >= -2*PADDING) then
+    Exit(3); // Top Right
 end;
 
 procedure ResizeSelection(VertexIndex: integer; ANewPos: TDoublePoint);
@@ -299,25 +322,51 @@ var
   v: integer;
   sx, sy, dx, dy: double;
   Anchor, SelectionVertex: TDoublePoint;
+  SelectionTL, SelectionBR: TDoublePoint;
 begin
+  SelectionTL := GetSelectionTopLeft;
+  SelectionBR := GetSelectionBottomRight;
   case VertexIndex of
     0:
     begin
-      Anchor := GetSelectionTopLeft;
-      SelectionVertex := GetSelectionBottomRight;
+      Anchor := SelectionTL;
+      SelectionVertex := SelectionBR;
       sx := (Anchor.x - ANewPos.x) / (Anchor.x - SelectionVertex.x);
       sy := (Anchor.y - ANewPos.y) / (Anchor.y - SelectionVertex.y);
-      for f in CanvasItems do
-      begin
-        if f.Selected then
-          for v := Low(f.Vertexes) to High(f.Vertexes) do
-          begin
-            dx := (f.Vertexes[v].x - Anchor.x) * sx;
-            dy := (f.Vertexes[v].y - Anchor.y) * sy;
-            f.MoveVertex(v, DoublePoint(Anchor.x + dx, Anchor.y + dy));
-          end;
-      end;
     end;
+    1:
+    begin
+      Anchor := SelectionBR;
+      SelectionVertex := SelectionTL;
+      sx := (ANewPos.x - Anchor.x) / (SelectionVertex.x - Anchor.x);
+      sy := (ANewPos.y - Anchor.y) / (SelectionVertex.y - Anchor.y);
+    end;
+    2:
+    begin
+      Anchor := DoublePoint(SelectionBR.x, SelectionTL.y);
+      SelectionVertex := DoublePoint(SelectionTL.x, SelectionBR.y);
+      sx := (Anchor.x - ANewPos.x) / (Anchor.x - SelectionVertex.x);
+      sy := (ANewPos.y - Anchor.y) / (SelectionVertex.y - Anchor.y);
+    end;
+    3:
+    begin
+      Anchor := DoublePoint(SelectionTL.x, SelectionBR.y);
+      SelectionVertex := DoublePoint(SelectionBR.x, SelectionTL.y);
+      sx := (ANewPos.x - Anchor.x) / (SelectionVertex.x - Anchor.x);
+      sy := (Anchor.y - ANewPos.y) / (Anchor.y - SelectionVertex.y);
+    end;
+    else
+      Exit;
+  end;
+  for f in CanvasItems do
+  begin
+    if f.Selected then
+      for v := Low(f.Vertexes) to High(f.Vertexes) do
+      begin
+        dx := (f.Vertexes[v].x - Anchor.x) * sx;
+        dy := (f.Vertexes[v].y - Anchor.y) * sy;
+        f.MoveVertex(v, DoublePoint(Anchor.x + dx, Anchor.y + dy));
+      end;
   end;
 end;
 
