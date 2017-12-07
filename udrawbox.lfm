@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 447
+  Left = 256
   Height = 654
-  Top = 44
+  Top = 38
   Width = 1055
   Caption = 'DrawForm'
   ClientHeight = 634
@@ -13,6 +13,7 @@ object DrawForm: TDrawForm
   LCLVersion = '1.6.4.0'
   object MainPaintBox: TPaintBox
     AnchorSideTop.Control = Owner
+    Cursor = crCross
     Left = 120
     Height = 599
     Top = 0
@@ -203,15 +204,15 @@ object DrawForm: TDrawForm
         ShortCut = 46
         OnClick = DeleteSelectedMenuItemClick
       end
-      object MoveOnTopMenuItem: TMenuItem
-        Caption = 'Move on top'
+      object MoveUpMenuItem: TMenuItem
+        Caption = 'Move up'
         ShortCut = 24614
-        OnClick = MoveOnTopMenuItemClick
+        OnClick = MoveUpMenuItemClick
       end
-      object MoveOnBottomMenuItem: TMenuItem
-        Caption = 'Move on bottom'
+      object MoveDownMenuItem: TMenuItem
+        Caption = 'Move down'
         ShortCut = 24616
-        OnClick = MoveOnBottomMenuItemClick
+        OnClick = MoveDownMenuItemClick
       end
     end
     object HelpMenuItem: TMenuItem
