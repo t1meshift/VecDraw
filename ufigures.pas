@@ -402,10 +402,19 @@ end;
 procedure RemoveSelection;
 var
   CurrentFigure: TFigure;
+  sp: TToolParamList;
+  p: TToolParam;
 begin
-  for CurrentFigure in CanvasItems do
-    if CurrentFigure <> nil then
-      CurrentFigure.Selected := False;
+  if CanvasItems <> nil then
+  begin
+    sp := GetSelectionParams;
+    if sp <> nil then
+      for p in sp do
+        p.UnattachAll;
+    for CurrentFigure in CanvasItems do
+      if CurrentFigure <> nil then
+        CurrentFigure.Selected := False;
+  end;
 end;
 
 procedure DeleteSelected;
@@ -472,9 +481,11 @@ var
   i, k, SelCount: integer;
 begin
   SelCount := 0;
+  if CanvasItems = nil then
+    Exit(nil);
   for f in CanvasItems do
   begin
-    if f.Selected then
+    if (f <> nil) and (f.Selected) then
     begin
       inc(SelCount);
       FigureParams := f.GetParams;

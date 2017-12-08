@@ -21,6 +21,7 @@ type
     property Name: string read FName;
     function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
     procedure AttachParam(AParam: TToolParam);
+    procedure UnattachAll;
   end;
 
   TToolParamList = array of TToolParam;
@@ -104,6 +105,11 @@ procedure TToolParam.AttachParam(AParam: TToolParam);
 begin
   SetLength(AttachedParams, Length(AttachedParams) + 1);
   AttachedParams[High(AttachedParams)] := AParam;
+end;
+
+procedure TToolParam.UnattachAll;
+begin
+  SetLength(AttachedParams, 0);
 end;
 
 { TColorParam }
