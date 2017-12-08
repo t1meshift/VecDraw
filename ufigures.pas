@@ -6,7 +6,8 @@ unit UFigures;
 interface
 
 uses
-  Classes, SysUtils, Graphics, UTransform, Windows, Math, Controls;
+  Classes, SysUtils, Graphics, UTransform, Windows, Math, Controls, UToolParams,
+  TypInfo;
 
 type
 
@@ -33,6 +34,7 @@ type
     function UnderPoint(const APoint: TDoublePoint): boolean; virtual; abstract;
     procedure MoveFigure(dx, dy: double);
     procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint); virtual;
+    function GetParams: TToolParamList; virtual; abstract;
   end;
 
   TFigureList = array of TFigure;
@@ -42,35 +44,39 @@ type
 
   TDrawableFigure = class(TFigure)
   private
-    FLineWidth: integer;
-    FLineColor: TColor;
-    FLineStyle: TPenStyle;
-    procedure SetLineWidth(AWidth: integer);
+    FLineWidth: TIntegerParam;
+    FLineColor: TColorParam;
+    FLineStyle: TLineStyleParam;
     procedure SetCanvasStyles(ACanvas: TCanvas);
     function GetCanvasLineWidth: integer;
   public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle);
+    constructor Create(X, Y: double; ALineWidth: TIntegerParam;
+      ALineColor: TColorParam; ALineStyle: TLineStyleParam);
+    destructor Destroy; override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
-    property LineWidth: integer read FLineWidth write SetLineWidth;
+    property LineWidth: TIntegerParam read FLineWidth write FLineWidth;
     property LineWidthCanvas: integer read GetCanvasLineWidth;
-    property LineColor: TColor read FLineColor write FLineColor;
-    property LineStyle: TPenStyle read FLineStyle write FLineStyle;
+    property LineColor: TColorParam read FLineColor write FLineColor;
+    property LineStyle: TLineStyleParam read FLineStyle write FLineStyle;
+    function GetParams: TToolParamList; override;
   end;
 
   { TFillableFigure }
 
   TFillableFigure = class(TDrawableFigure)
   private
-    FFillColor: TColor;
-    FFillStyle: TBrushStyle;
+    FFillColor: TColorParam;
+    FFillStyle: TFillStyleParam;
     procedure SetCanvasStyles(ACanvas: TCanvas);
   public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle);
-    property FillColor: TColor read FFillColor write FFillColor;
-    property FillStyle: TBrushStyle read FFillStyle write FFillStyle;
+    constructor Create(X, Y: double; ALineWidth: TIntegerParam;
+      ALineColor: TColorParam; ALineStyle: TLineStyleParam;
+      AFillColor: TColorParam; AFillStyle: TFillStyleParam);
+    destructor Destroy; override;
+    property FillColor: TColorParam read FFillColor write FFillColor;
+    property FillStyle: TFillStyleParam read FFillStyle write FFillStyle;
+    function GetParams: TToolParamList; override;
   end;
 
   { TRegionSelection }
@@ -108,15 +114,18 @@ type
 
   TRoundRect = class(TFillableFigure)
   private
-    FRoundX, FRoundY: integer;
+    FRoundX, FRoundY: TIntegerParam;
   public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle;
-      ARoundX, ARoundY: integer);
+    constructor Create(X, Y: double; ALineWidth: TIntegerParam;
+      ALineColor: TColorParam; ALineStyle: TLineStyleParam;
+      AFillColor: TColorParam; AFillStyle: TFillStyleParam;
+      ARoundX, ARoundY: TIntegerParam);
+    destructor Destroy; override;
     procedure Draw(ACanvas: TCanvas); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
-    property RoundX: integer read FRoundX write FRoundX;
-    property RoundY: integer read FRoundY write FRoundY;
+    property RoundX: TIntegerParam read FRoundX write FRoundX;
+    property RoundY: TIntegerParam read FRoundY write FRoundY;
+    function GetParams: TToolParamList; override;
   end;
 
   { TEllipse }
@@ -131,16 +140,20 @@ type
 
   TPolygon = class(TFillableFigure)
   private
-    FVertexCount: integer;
+    FVertexCount: TIntegerParam;
     StartPoint: TDoublePoint;
+    EndPoint: TPoint;
   public
-    constructor Create(X, Y: double; ALineWidth: integer; ALineColor: TColor;
-      ALineStyle: TPenStyle; AFillColor: TColor; AFillStyle: TBrushStyle;
-      AVertexCount: integer);
+    constructor Create(X, Y: double; ALineWidth: TIntegerParam;
+      ALineColor: TColorParam; ALineStyle: TLineStyleParam;
+      AFillColor: TColorParam; AFillStyle: TFillStyleParam;
+      AVertexCount: TIntegerParam);
+    destructor Destroy; override;
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
-    property VertexCount: integer read FVertexCount write FVertexCount;
+    property VertexCount: TIntegerParam read FVertexCount write FVertexCount;
+    function GetParams: TToolParamList; override;
   end;
 
 function GetSelectionTopLeft: TDoublePoint;
@@ -153,6 +166,7 @@ procedure RemoveSelection;
 procedure DeleteSelected;
 procedure MoveSelectedOnTop;
 procedure MoveSelectedOnBottom;
+function GetSelectionParams: TToolParamList;
 
 const
   PADDING = 5;
@@ -173,7 +187,7 @@ begin
   begin
     if f.Selected then
     begin
-      d := (f as TDrawableFigure).LineWidth / 2;
+      d := (f as TDrawableFigure).LineWidth.Value / 2;
       if not HasSelection then
       begin
         Result.x := f.FTopLeft.x - d;
@@ -201,7 +215,7 @@ begin
   begin
     if f.Selected then
     begin
-      d := (f as TDrawableFigure).LineWidth / 2;
+      d := (f as TDrawableFigure).LineWidth.Value / 2;
       if not HasSelection then
       begin
         Result.x := f.FBottomRight.x + d;
@@ -234,8 +248,10 @@ begin
       with ACanvas do
       begin
         Pen.Width := 2;
+        Pen.Color := clBlack;
         Pen.Style := psDash;
         Pen.Mode := pmNot;
+        Brush.Color := clWhite;
         Brush.Style := bsClear;
         Rectangle(CFigureTL.x, CFigureTL.y, CFigureBR.x, CFigureBR.y);
         Pen.Mode := pmCopy;
@@ -246,8 +262,10 @@ begin
         with ACanvas do
         begin
           Pen.Width := 1;
+          Pen.Color := clBlack;
           Pen.Style := psSolid;
           Pen.Mode := pmCopy;
+          Brush.Color := clWhite;
           Brush.Style := bsSolid;
           Rectangle(CurrentVertex.x - PADDING, CurrentVertex.y - PADDING,
             CurrentVertex.x + PADDING, CurrentVertex.y + PADDING);
@@ -266,6 +284,7 @@ begin
     with ACanvas do
     begin
       Pen.Width := 2;
+      Pen.Color := clBlack;
       Pen.Style := psDash;
       Pen.Mode := pmNot;
       Brush.Style := bsClear;
@@ -274,6 +293,7 @@ begin
       Pen.Mode := pmCopy;
       Pen.Width := 1;
       Pen.Style := psSolid;
+      Brush.Color := clBlack;
       Brush.Style := bsSolid;
       Rectangle(CSelectionBR.x, CSelectionBR.y,
         CSelectionBR.x + 2*PADDING, CSelectionBR.y + 2*PADDING); //0th vertex
@@ -443,6 +463,59 @@ begin
   end;
 end;
 
+function GetSelectionParams: TToolParamList;
+var
+  f: TFigure;
+  FigureParams: TToolParamList;
+  CommonParams: array of TToolParamList;
+  p, p0: TToolParam;
+  i, k, SelCount: integer;
+begin
+  SelCount := 0;
+  for f in CanvasItems do
+  begin
+    if f.Selected then
+    begin
+      inc(SelCount);
+      FigureParams := f.GetParams;
+      if Length(CommonParams) = 0 then
+      begin
+        SetLength(CommonParams, Length(FigureParams));
+        for i := Low(FigureParams) to High(FigureParams) do
+        begin
+          SetLength(CommonParams[i], 1);
+          CommonParams[i][0] := FigureParams[i];
+        end;
+      end
+      else
+      begin
+        for p in FigureParams do
+        begin
+          for i := Low(CommonParams) to High(CommonParams) do
+          begin
+            p0 := CommonParams[i][Length(CommonParams[i]) - 1];
+            if (p0.ClassType = p.ClassType) and (p0.Name = p.Name) then
+            begin
+              SetLength(CommonParams[i], Length(CommonParams[i]) + 1);
+              CommonParams[i][Length(CommonParams[i]) - 1] := p;
+            end;
+          end;
+        end;
+      end;
+    end;
+  end;
+  for i := Low(CommonParams) to High(CommonParams) do
+  begin
+    if Length(CommonParams[i]) = SelCount then
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[Length(Result) - 1] := CommonParams[i][0];
+      for k := 0 to High(CommonParams[i]) do
+        Result[Length(Result) - 1].AttachParam(CommonParams[i][k]);
+    end;
+  end;
+end;
+
 { TFillableFigure }
 
 procedure TFillableFigure.SetCanvasStyles(ACanvas: TCanvas);
@@ -450,58 +523,68 @@ begin
   inherited SetCanvasStyles(ACanvas);
   with ACanvas do
   begin
-    Brush.Color := FFillColor;
-    Brush.Style := FFillStyle;
+    Brush.Color := FillColor.Value;
+    Brush.Style := FillStyle.Value;
   end;
 end;
 
-constructor TFillableFigure.Create(X, Y: double; ALineWidth: integer;
-  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
-  AFillStyle: TBrushStyle);
+constructor TFillableFigure.Create(X, Y: double; ALineWidth: TIntegerParam;
+  ALineColor: TColorParam; ALineStyle: TLineStyleParam;
+  AFillColor: TColorParam; AFillStyle: TFillStyleParam);
 begin
-  SetLength(FVertexes, 2);
-  FVertexes[0] := DoublePoint(X, Y);
-  FVertexes[1] := FVertexes[0];
-  LineColor := ALineColor;
-  LineWidth := ALineWidth;
-  LineStyle := ALineStyle;
-  FillColor := AFillColor;
-  FillStyle := AFillStyle;
-  Selected := False;
+  inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle);
+  AFillColor.Assign(FFillColor);
+  AFillStyle.Assign(FFillStyle);
+end;
+
+destructor TFillableFigure.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(FFillColor);
+  FreeAndNil(FFillStyle);
+end;
+
+function TFillableFigure.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(LineWidth, LineColor, LineStyle,
+    FillColor, FillStyle);
 end;
 
 { TDrawableFigure }
-
-procedure TDrawableFigure.SetLineWidth(AWidth: integer);
-begin
-  FLineWidth := AWidth;
-end;
 
 procedure TDrawableFigure.SetCanvasStyles(ACanvas: TCanvas);
 begin
   with ACanvas do
   begin
-    Pen.Color := FLineColor;
+    Pen.Color := LineColor.Value;
     Pen.Width := GetCanvasLineWidth;
-    Pen.Style := FLineStyle;
+    Pen.Style := LineStyle.Value;
   end;
 end;
 
 function TDrawableFigure.GetCanvasLineWidth: integer;
 begin
-  Result := max(1, Round(FLineWidth * Scale));
+  Result := max(1, Round(LineWidth.Value * Scale));
 end;
 
-constructor TDrawableFigure.Create(X, Y: double; ALineWidth: integer;
-  ALineColor: TColor; ALineStyle: TPenStyle);
+constructor TDrawableFigure.Create(X, Y: double; ALineWidth: TIntegerParam;
+  ALineColor: TColorParam; ALineStyle: TLineStyleParam);
 begin
   SetLength(FVertexes, 2);
   FVertexes[0] := DoublePoint(X, Y);
   FVertexes[1] := FVertexes[0];
-  LineColor := ALineColor;
-  LineWidth := ALineWidth;
-  LineStyle := ALineStyle;
+  ALineColor.Assign(FLineColor);
+  ALineWidth.Assign(FLineWidth);
+  ALineStyle.Assign(FLineStyle);
   Selected := False;
+end;
+
+destructor TDrawableFigure.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(FLineWidth);
+  FreeAndNil(FLineColor);
+  FreeAndNil(FLineStyle);
 end;
 
 procedure TDrawableFigure.MouseMove(X, Y: integer);
@@ -529,7 +612,7 @@ begin
     a := p0.y - p1.y;
     b := p1.x - p0.x;
     c := p0.x * p1.y - p1.x * p0.y;
-    d := LineWidth / 2 + PADDING / Scale;
+    d := LineWidth.Value / 2 + PADDING / Scale;
     if (abs(a) < eps) and (abs(b) < eps) then
     begin
       //just a point
@@ -568,21 +651,34 @@ begin
   Result := False;
 end;
 
+function TDrawableFigure.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(LineWidth, LineColor, LineStyle);
+end;
+
 { TPolygon }
 
-constructor TPolygon.Create(X, Y: double; ALineWidth: integer;
-  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
-  AFillStyle: TBrushStyle; AVertexCount: integer);
+constructor TPolygon.Create(X, Y: double; ALineWidth: TIntegerParam;
+  ALineColor: TColorParam; ALineStyle: TLineStyleParam;
+  AFillColor: TColorParam; AFillStyle: TFillStyleParam;
+  AVertexCount: TIntegerParam);
 var
   ScreenPoint: TPoint;
 begin
   inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle,
     AFillColor, AFillStyle);
-  SetLength(FVertexes, AVertexCount);
+  AVertexCount.Assign(FVertexCount);
+  SetLength(FVertexes, VertexCount.Value);
   StartPoint := DoublePoint(X, Y);
   ScreenPoint := WorldToCanvas(X, Y);
-  VertexCount := AVertexCount;
+  EndPoint := ScreenPoint;
   MouseMove(ScreenPoint.x, ScreenPoint.y);
+end;
+
+destructor TPolygon.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(FVertexCount);
 end;
 
 procedure TPolygon.Draw(ACanvas: TCanvas);
@@ -591,6 +687,8 @@ var
   CanvasVertexes: TPointList;
 begin
   SetCanvasStyles(ACanvas);
+  if Length(FVertexes) <> VertexCount.Value then
+    MouseMove(EndPoint.x, EndPoint.y);
   SetLength(CanvasVertexes, Length(FVertexes));
   for i := Low(FVertexes) to High(FVertexes) do
     CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
@@ -603,15 +701,19 @@ var
   CurrentRotation, Radius: double;
   WorldPos: TDoublePoint;
 begin
+  EndPoint.x := X;
+  EndPoint.y := Y;
   WorldPos := CanvasToWorld(X, Y);
   CurrentRotation := arctan2(WorldPos.y - StartPoint.y, WorldPos.x - StartPoint.x);
   Radius := Dist(StartPoint, WorldPos);
+  if Length(FVertexes) <> VertexCount.Value then
+    SetLength(FVertexes, VertexCount.Value);
   for i := Low(FVertexes) to High(FVertexes) do
   begin
     FVertexes[i].x := StartPoint.x + Radius * cos(CurrentRotation +
-      (i * 2 * pi / VertexCount));
+      (i * 2 * pi / VertexCount.Value));
     FVertexes[i].y := StartPoint.y + Radius * sin(CurrentRotation +
-      (i * 2 * pi / VertexCount));
+      (i * 2 * pi / VertexCount.Value));
   end;
 end;
 
@@ -622,25 +724,39 @@ var
   CanvasPoint: TPoint;
   i: integer;
 begin
-  SetLength(CanvasVertexes, VertexCount);
+  SetLength(CanvasVertexes, VertexCount.Value);
   for i := Low(FVertexes) to High(FVertexes) do
     CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
-  RegionFigure := CreatePolygonRgn(CanvasVertexes[0], VertexCount, WINDING);
+  RegionFigure := CreatePolygonRgn(CanvasVertexes[0], VertexCount.Value, WINDING);
   CanvasPoint := WorldToCanvas(APoint);
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
 end;
 
+function TPolygon.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(VertexCount, LineWidth, LineColor, LineStyle,
+    FillColor, FillStyle);
+end;
+
 { TRoundRect }
 
-constructor TRoundRect.Create(X, Y: double; ALineWidth: integer;
-  ALineColor: TColor; ALineStyle: TPenStyle; AFillColor: TColor;
-  AFillStyle: TBrushStyle; ARoundX, ARoundY: integer);
+constructor TRoundRect.Create(X, Y: double; ALineWidth: TIntegerParam;
+  ALineColor: TColorParam; ALineStyle: TLineStyleParam;
+  AFillColor: TColorParam; AFillStyle: TFillStyleParam; ARoundX,
+  ARoundY: TIntegerParam);
 begin
   inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle,
     AFillColor, AFillStyle);
-  FRoundX := ARoundX;
-  FRoundY := ARoundY;
+  ARoundX.Assign(FRoundX);
+  ARoundY.Assign(FRoundY);
+end;
+
+destructor TRoundRect.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(FRoundX);
+  FreeAndNil(FRoundY);
 end;
 
 procedure TRoundRect.Draw(ACanvas: TCanvas);
@@ -651,7 +767,7 @@ begin
   CanvasTopLeft := WorldToCanvas(FVertexes[0].x, FVertexes[0].y);
   CanvasBottomRight := WorldToCanvas(FVertexes[1].x, FVertexes[1].y);
   ACanvas.RoundRect(CanvasTopLeft.x, CanvasTopLeft.y,
-    CanvasBottomRight.x, CanvasBottomRight.y, FRoundX * 2, FRoundY * 2);
+    CanvasBottomRight.x, CanvasBottomRight.y, RoundX.Value*2, RoundY.Value*2);
 end;
 
 function TRoundRect.UnderPoint(const APoint: TDoublePoint): boolean;
@@ -670,20 +786,28 @@ begin
     min(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
     min(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
     max(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
-    max(CanvasVertexes[0].y, CanvasVertexes[1].y) + d, FRoundX * 2, FRoundY * 2);
+    max(CanvasVertexes[0].y, CanvasVertexes[1].y) + d,
+    FRoundX.Value * 2, FRoundY.Value * 2);
   CanvasPoint := WorldToCanvas(APoint);
-  if FillStyle = bsClear then
+  if FillStyle.Value = bsClear then
   begin
     RegionInner := CreateRoundRectRgn(
       max(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,
       max(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
       min(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
-      min(CanvasVertexes[0].y, CanvasVertexes[1].y) + d, FRoundX * 2, FRoundY * 2);
+      min(CanvasVertexes[0].y, CanvasVertexes[1].y) + d,
+      FRoundX.Value * 2, FRoundY.Value * 2);
     CombineRgn(RegionFigure, RegionFigure, RegionInner, RGN_DIFF);
     DeleteObject(RegionInner);
   end;
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
+end;
+
+function TRoundRect.GetParams: TToolParamList;
+begin
+  Result := TToolParamList.Create(RoundX, RoundY, LineWidth, LineColor,
+    LineStyle, FillColor, FillStyle);
 end;
 
 { TFigure }
@@ -853,7 +977,7 @@ begin
     d, min(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
     max(CanvasVertexes[0].x, CanvasVertexes[1].x) + d,
     max(CanvasVertexes[0].y, CanvasVertexes[1].y) + d);
-  if FillStyle = bsClear then
+  if FillStyle.Value = bsClear then
   begin
     RegionInner := CreateRectRgn(max(CanvasVertexes[0].x, CanvasVertexes[1].x) -
       d, max(CanvasVertexes[0].y, CanvasVertexes[1].y) - d,
@@ -899,7 +1023,7 @@ begin
     max(CanvasVertexes[0].x + d, CanvasVertexes[1].x + d),
     max(CanvasVertexes[0].y + d, CanvasVertexes[1].y + d));
 
-  if FillStyle = bsClear then
+  if FillStyle.Value = bsClear then
   begin
     RegionInner := CreateEllipticRgn(
       max(CanvasVertexes[0].x, CanvasVertexes[1].x) - d,

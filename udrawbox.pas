@@ -53,6 +53,7 @@ type
     procedure MainPaintBoxResize(Sender: TObject);
     procedure ScaleFloatSpinChange(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
+    procedure UpdateParamsPanel;
     procedure MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     procedure MainPaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
@@ -83,6 +84,7 @@ var
   DrawForm: TDrawForm;
   IsDrawing: boolean;
   CurrentTool: TTool;
+  ParamsList: TToolParamList;
   WorldTopLeft, WorldBottomRight: TDoublePoint;
 
 implementation
@@ -205,12 +207,14 @@ end;
 procedure TDrawForm.RemoveSelectionMenuItemClick(Sender: TObject);
 begin
   RemoveSelection;
+  UpdateParamsPanel;
   Invalidate;
 end;
 
 procedure TDrawForm.SelectAllMenuItemClick(Sender: TObject);
 begin
   SelectAll;
+  UpdateParamsPanel;
   Invalidate;
 end;
 
@@ -282,19 +286,26 @@ end;
 procedure TDrawForm.ToolButtonClick(Sender: TObject);
 var
   b: TSpeedButton;
-  CurrParam: TToolParam;
-  i: integer;
-  l: TLabel;
-  c: TControl;
-  ParamsList: TToolParamList;
-
 begin
   b := Sender as TSpeedButton;
   CurrentTool := ToolsBase[b.Tag];
   b.Down := True;
+  UpdateParamsPanel;
+end;
 
+procedure TDrawForm.UpdateParamsPanel;
+var
+  CurrParam: TToolParam;
+  i: integer;
+  l: TLabel;
+  c: TControl;
+begin
   ToolParamsPanel.DestroyComponents;
+
   ParamsList := CurrentTool.GetParams;
+  if ParamsList = nil then
+    ParamsList := GetSelectionParams;
+
   if ParamsList <> nil then
   begin
     for i := High(ParamsList) downto Low(ParamsList) do
@@ -347,6 +358,7 @@ begin
   begin
     IsDrawing := False;
   end;
+  UpdateParamsPanel;
   MainPaintBox.Invalidate;
 end;
 
@@ -385,6 +397,7 @@ begin
   for i := Low(CanvasItems) to High(CanvasItems) do
     FreeAndNil(CanvasItems[i]);
   SetLength(CanvasItems, 0);
+  UpdateParamsPanel;
   MainPaintBox.Invalidate;
   SetScrollBars;
 end;
@@ -393,6 +406,7 @@ procedure TDrawForm.DeleteSelectedMenuItemClick(Sender: TObject);
 begin
   DeleteSelected;
   SetScrollBars;
+  UpdateParamsPanel;
   Invalidate;
 end;
 
@@ -418,14 +432,13 @@ procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 var
   i: integer;
 begin
+  ClearAllMenuItemClick(nil);
+  ToolParamsPanel.DestroyComponents;
   CurrentTool := nil;
   for i := Low(ToolsBase) to High(ToolsBase) do
     if ToolsBase[i] <> nil then
       FreeAndNil(ToolsBase[i]);
   SetLength(ToolsBase, 0);
-
-  ClearAllMenuItemClick(nil);
-  ToolParamsPanel.DestroyComponents;
 end;
 
 end.

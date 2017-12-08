@@ -9,13 +9,18 @@ uses
   StdCtrls;
 
 type
+
+  { TToolParam }
+
   TToolParam = class
   private
     FName: string;
+    AttachedParams: array of TToolParam;
     procedure OnChangeControl(Sender: TObject); virtual; abstract;
   public
     property Name: string read FName;
     function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
+    procedure AttachParam(AParam: TToolParam);
   end;
 
   TToolParamList = array of TToolParam;
@@ -33,6 +38,7 @@ type
       AMinValue, AMaxValue, ADefaultValue: integer);
     property Value: integer read FValue write FSetValue;
     function ToControl(AParentPanel: TPanel): TControl; override;
+    procedure Assign(var Source: TIntegerParam);
   end;
 
   { TColorParam }
@@ -45,6 +51,7 @@ type
     constructor Create(AParamName: string; ADefaultValue: TColor);
     property Value: TColor read FValue write FValue;
     function ToControl(AParentPanel: TPanel): TControl; override;
+    procedure Assign(var Source: TColorParam);
   end;
 
   { TLineStyleParam }
@@ -57,13 +64,15 @@ type
       psDash, psDashDot, psDashDotDot);
 
     function FGetLineStyle: TPenStyle;
+    procedure SetLineStyle(ALineStyle: TPenStyle);
     procedure OnChangeControl(Sender: TObject); override;
     procedure FDrawItem(Control: TWinControl; Index: integer;
       ARect: TRect; State: TOwnerDrawState);
   public
-    property Value: TPenStyle read FGetLineStyle;
+    property Value: TPenStyle read FGetLineStyle write SetLineStyle;
     constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; override;
+    procedure Assign(var Source: TLineStyleParam);
   end;
 
   { TFillStyleParam }
@@ -76,22 +85,40 @@ type
       bsHorizontal, bsVertical, bsFDiagonal, bsBDiagonal, bsCross, bsDiagCross);
 
     function FGetFillStyle: TBrushStyle;
+    procedure SetFillStyle(AFillStyle: TBrushStyle);
     procedure OnChangeControl(Sender: TObject); override;
     procedure FDrawItem(Control: TWinControl; Index: integer;
       ARect: TRect; State: TOwnerDrawState);
   public
-    property Value: TBrushStyle read FGetFillStyle;
+    property Value: TBrushStyle read FGetFillStyle write SetFillStyle;
     constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; override;
+    procedure Assign(var Source: TFillStyleParam);
   end;
 
 implementation
 
+{ TToolParam }
+
+procedure TToolParam.AttachParam(AParam: TToolParam);
+begin
+  SetLength(AttachedParams, Length(AttachedParams) + 1);
+  AttachedParams[High(AttachedParams)] := AParam;
+end;
+
 { TColorParam }
 
 procedure TColorParam.OnChangeControl(Sender: TObject);
+var
+  p: TToolParam;
 begin
   FValue := (Sender as TColorButton).ButtonColor;
+  if AttachedParams <> nil then
+  begin
+    for p in AttachedParams do
+      (p as TColorParam).FValue := (Sender as TColorButton).ButtonColor;
+    (Sender as TControl).GetTopParent.Invalidate;
+  end;
 end;
 
 constructor TColorParam.Create(AParamName: string; ADefaultValue: TColor);
@@ -111,6 +138,13 @@ begin
   end;
 end;
 
+procedure TColorParam.Assign(var Source: TColorParam);
+begin
+  Source := TColorParam.Create(Self.Name, Self.Value);
+  Source.FName := Self.FName;
+  Source.FValue := Self.FValue;
+end;
+
 { TIntegerParam }
 
 procedure TIntegerParam.FSetValue(AValue: integer);
@@ -124,8 +158,16 @@ begin
 end;
 
 procedure TIntegerParam.OnChangeControl(Sender: TObject);
+var
+  p: TToolParam;
 begin
   FSetValue((Sender as TSpinEdit).Value);
+  if AttachedParams <> nil then
+  begin
+    for p in AttachedParams do
+      (p as TIntegerParam).FSetValue((Sender as TSpinEdit).Value);
+    (Sender as TControl).GetTopParent.Invalidate;
+  end;
 end;
 
 constructor TIntegerParam.Create(AParamName: string;
@@ -141,15 +183,22 @@ end;
 
 function TIntegerParam.ToControl(AParentPanel: TPanel): TControl;
 begin
-  Result := TSpinEdit.Create(AParentPanel);
-  with Result as TSpinEdit do
-  begin
-    Parent := AParentPanel;
-    MinValue := FMinValue;
-    MaxValue := FMaxValue;
-    Value := FValue;
-    OnChange := @OnChangeControl;
-  end;
+    Result := TSpinEdit.Create(AParentPanel);
+    with Result as TSpinEdit do
+    begin
+      Parent := AParentPanel;
+      MinValue := FMinValue;
+      MaxValue := FMaxValue;
+      Value := FValue;
+      OnChange := @OnChangeControl;
+    end;
+end;
+
+procedure TIntegerParam.Assign(var Source: TIntegerParam);
+begin
+  Source := TIntegerParam.Create(Self.Name, FMinValue, FMaxValue, Self.Value);
+  Source.FName := Self.FName;
+  Source.FValue := Self.FValue;
 end;
 
 { TFillStyleParam }
@@ -159,9 +208,32 @@ begin
   Result := FFillStyles[FFillIndex];
 end;
 
+procedure TFillStyleParam.SetFillStyle(AFillStyle: TBrushStyle);
+var
+  i: integer;
+begin
+  for i := Low(FFillStyles) to High(FFillStyles) do
+  begin
+    if AFillStyle = FFillStyles[i] then
+    begin
+      FFillIndex := i;
+      exit;
+    end;
+  end;
+  raise Exception.Create('Invalid fill style');
+end;
+
 procedure TFillStyleParam.OnChangeControl(Sender: TObject);
+var
+  p: TToolParam;
 begin
   FFillIndex := (Sender as TComboBox).ItemIndex;
+  if AttachedParams <> nil then
+  begin
+    for p in AttachedParams do
+      (p as TFillStyleParam).FFillIndex := (Sender as TComboBox).ItemIndex;
+    (Sender as TControl).GetTopParent.Invalidate;
+  end;
 end;
 
 procedure TFillStyleParam.FDrawItem(Control: TWinControl; Index: integer;
@@ -208,6 +280,13 @@ begin
   end;
 end;
 
+procedure TFillStyleParam.Assign(var Source: TFillStyleParam);
+begin
+  Source := TFillStyleParam.Create;
+  Source.FName := Self.FName;
+  Source.FFillIndex := Self.FFillIndex;
+end;
+
 { TLineStyleParam }
 
 function TLineStyleParam.FGetLineStyle: TPenStyle;
@@ -215,9 +294,32 @@ begin
   Result := FLineStyles[FLineIndex];
 end;
 
+procedure TLineStyleParam.SetLineStyle(ALineStyle: TPenStyle);
+var
+  i: integer;
+begin
+  for i := Low(FLineStyles) to High(FLineStyles) do
+  begin
+    if ALineStyle = FLineStyles[i] then
+    begin
+      FLineIndex := i;
+      exit;
+    end;
+  end;
+  raise Exception.Create('Invalid line style');
+end;
+
 procedure TLineStyleParam.OnChangeControl(Sender: TObject);
+var
+  p: TToolParam;
 begin
   FLineIndex := (Sender as TComboBox).ItemIndex;
+  if AttachedParams <> nil then
+  begin
+    for p in AttachedParams do
+      (p as TLineStyleParam).FLineIndex := (Sender as TComboBox).ItemIndex;
+    (Sender as TControl).GetTopParent.Invalidate;
+  end;
 end;
 
 procedure TLineStyleParam.FDrawItem(Control: TWinControl; Index: integer;
@@ -260,6 +362,13 @@ begin
     ReadOnly := True;
     ItemIndex := FLineIndex;
   end;
+end;
+
+procedure TLineStyleParam.Assign(var Source: TLineStyleParam);
+begin
+  Source := TLineStyleParam.Create;
+  Source.FName := Self.FName;
+  Source.FLineIndex := Self.FLineIndex;
 end;
 
 end.

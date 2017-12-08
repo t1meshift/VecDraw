@@ -184,7 +184,7 @@ procedure TModifierTool.MouseDown(X, Y: integer; Button: TMouseButton);
 var
   WorldStartCoord: TDoublePoint;
   SelectionTL, SelectionBR: TDoublePoint;
-  i, j: integer;
+  i: integer;
   f: TFigure;
   HasSelectionOnTop: boolean;
 begin
@@ -495,9 +495,8 @@ begin
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
-    FFigure := TPolygon.Create(WorldCoords.x, WorldCoords.y, FLineWidth.Value,
-      FLineColor.Value, FLineStyle.Value, FFillColor.Value, FFillStyle.Value,
-      FVertexCount.Value);
+    FFigure := TPolygon.Create(WorldCoords.x, WorldCoords.y, FLineWidth,
+      FLineColor, FLineStyle, FFillColor, FFillStyle, FVertexCount);
   end;
 end;
 
@@ -550,8 +549,8 @@ begin
   if Button = mbLeft then
   begin
     FFigure := TRoundRect.Create(WorldCoords.x, WorldCoords.y,
-      FLineWidth.Value, FLineColor.Value, FLineStyle.Value, FFillColor.Value,
-      FFillStyle.Value, FRoundRadiusX.Value, FRoundRadiusY.Value);
+      FLineWidth, FLineColor, FLineStyle, FFillColor, FFillStyle, FRoundRadiusX,
+      FRoundRadiusY);
   end;
 end;
 
@@ -571,8 +570,8 @@ begin
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
-    FFigure := TEllipse.Create(WorldCoords.x, WorldCoords.y, FLineWidth.Value,
-      FLineColor.Value, FLineStyle.Value, FFillColor.Value, FFillStyle.Value);
+    FFigure := TEllipse.Create(WorldCoords.x, WorldCoords.y, FLineWidth,
+      FLineColor, FLineStyle, FFillColor, FFillStyle);
   end;
 end;
 
@@ -587,8 +586,7 @@ begin
   if Button = mbLeft then
   begin
     FFigure := TRectangle.Create(WorldCoords.x, WorldCoords.y,
-      FLineWidth.Value, FLineColor.Value, FLineStyle.Value, FFillColor.Value,
-      FFillStyle.Value);
+      FLineWidth, FLineColor, FLineStyle, FFillColor, FFillStyle);
   end;
 end;
 
@@ -674,8 +672,8 @@ begin
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
-    FFigure := TLine.Create(WorldCoords.x, WorldCoords.y, FLineWidth.Value,
-      FLineColor.Value, FLineStyle.Value);
+    FFigure := TLine.Create(WorldCoords.x, WorldCoords.y, FLineWidth,
+      FLineColor, FLineStyle);
   end;
 end;
 
@@ -726,8 +724,8 @@ begin
   WorldCoords := CanvasToWorld(X, Y);
   if Button = mbLeft then
   begin
-    FFigure := TPolyLine.Create(WorldCoords.x, WorldCoords.y,
-      FLineWidth.Value, FLineColor.Value, FLineStyle.Value);
+    FFigure := TPolyLine.Create(WorldCoords.x, WorldCoords.y, FLineWidth,
+      FLineColor, FLineStyle);
   end;
 end;
 
