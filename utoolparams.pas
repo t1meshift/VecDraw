@@ -12,19 +12,22 @@ type
 
   { TToolParam }
 
-  TToolParam = class
+  TToolParam = class(TPersistent)
   private
     FName: string;
     AttachedParams: array of TToolParam;
     procedure OnChangeControl(Sender: TObject); virtual; abstract;
   public
-    property Name: string read FName;
+    constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; virtual; abstract;
     procedure AttachParam(AParam: TToolParam);
     procedure UnattachAll;
+  published
+    property Name: string read FName write FName;
   end;
-
+  TToolParamClass = class of TToolParam;
   TToolParamList = array of TToolParam;
+  TToolParamClassList = array of TPersistentClass;
 
   { TIntegerParam }
 
@@ -37,9 +40,12 @@ type
   public
     constructor Create(AParamName: string;
       AMinValue, AMaxValue, ADefaultValue: integer);
-    property Value: integer read FValue write FSetValue;
     function ToControl(AParentPanel: TPanel): TControl; override;
     procedure Assign(var Source: TIntegerParam);
+  published
+    property Value: integer read FValue write FSetValue;
+    property MinValue: integer read FMinValue write FMinValue;
+    property MaxValue: integer read FMaxValue write FMaxValue;
   end;
 
   { TColorParam }
@@ -50,9 +56,10 @@ type
     procedure OnChangeControl(Sender: TObject); override;
   public
     constructor Create(AParamName: string; ADefaultValue: TColor);
-    property Value: TColor read FValue write FValue;
     function ToControl(AParentPanel: TPanel): TControl; override;
     procedure Assign(var Source: TColorParam);
+  published
+    property Value: TColor read FValue write FValue;
   end;
 
   { TLineStyleParam }
@@ -70,10 +77,11 @@ type
     procedure FDrawItem(Control: TWinControl; Index: integer;
       ARect: TRect; State: TOwnerDrawState);
   public
-    property Value: TPenStyle read FGetLineStyle write SetLineStyle;
     constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; override;
     procedure Assign(var Source: TLineStyleParam);
+  published
+    property Value: TPenStyle read FGetLineStyle write SetLineStyle;
   end;
 
   { TFillStyleParam }
@@ -91,15 +99,21 @@ type
     procedure FDrawItem(Control: TWinControl; Index: integer;
       ARect: TRect; State: TOwnerDrawState);
   public
-    property Value: TBrushStyle read FGetFillStyle write SetFillStyle;
     constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; override;
     procedure Assign(var Source: TFillStyleParam);
+  published
+    property Value: TBrushStyle read FGetFillStyle write SetFillStyle;
   end;
 
 implementation
 
 { TToolParam }
+
+constructor TToolParam.Create;
+begin
+  //Dummy
+end;
 
 procedure TToolParam.AttachParam(AParam: TToolParam);
 begin
@@ -376,5 +390,9 @@ begin
   Source.FName := Self.FName;
   Source.FLineIndex := Self.FLineIndex;
 end;
+
+initialization
+RegisterClasses(TToolParamClassList.Create(TIntegerParam, TColorParam,
+  TLineStyleParam, TFillStyleParam));
 
 end.

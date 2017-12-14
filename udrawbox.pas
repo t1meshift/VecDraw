@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
   ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UTools, UFigures, Types,
-  UTransform, UToolParams;
+  UTransform, UToolParams, UFileWorker;
 
 type
 
@@ -16,6 +16,10 @@ type
   TDrawForm = class(TForm)
     CanvasPropsPanel: TPanel;
     DeleteSelectedMenuItem: TMenuItem;
+    LoadMenuItem: TMenuItem;
+    OpenImgDialog: TOpenDialog;
+    SaveImgDialog: TSaveDialog;
+    SaveMenuItem: TMenuItem;
     MoveUpMenuItem: TMenuItem;
     MoveDownMenuItem: TMenuItem;
     SelectAllMenuItem: TMenuItem;
@@ -42,8 +46,10 @@ type
     procedure DeleteSelectedMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
+    procedure LoadMenuItemClick(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
+    procedure SaveMenuItemClick(Sender: TObject);
     procedure MoveDownMenuItemClick(Sender: TObject);
     procedure MoveUpMenuItemClick(Sender: TObject);
     procedure RemoveSelectionMenuItemClick(Sender: TObject);
@@ -139,7 +145,7 @@ var
   IconsPerRow: integer;
 begin
   DrawForm.DoubleBuffered := True;
-  DrawForm.Caption := ApplicationName;
+  DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
   IsDrawing := False;
   IconsPerRow := ToolsPanel.Width div (TOOL_BUTTON_SIZE +
     TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
@@ -181,6 +187,22 @@ begin
   SetScrollBars;
 end;
 
+procedure TDrawForm.LoadMenuItemClick(Sender: TObject);
+begin
+  if OpenImgDialog.Execute then
+  begin
+    ClearAllMenuItemClick(nil);
+    if LoadFile(OpenImgDialog.FileName)<>0 then
+    begin
+      Application.MessageBox('Loading error. Make sure the file is valid.',
+        'Error');
+      SetLength(CanvasItems, 0);
+    end
+    else
+      DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+  end;
+end;
+
 procedure TDrawForm.MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
 begin
@@ -190,6 +212,20 @@ begin
     ZoomPoint(CanvasToWorld(MousePos), Scale / 2);
   SetScrollBars;
   MainPaintBox.Invalidate;
+end;
+
+procedure TDrawForm.SaveMenuItemClick(Sender: TObject);
+begin
+  if SaveImgDialog.Execute then
+  begin
+    if SaveFile(SaveImgDialog.FileName)<>0 then
+    begin
+      Application.MessageBox('Saving error. Make sure the file isn''t locked.',
+        'Error');
+    end
+    else
+      DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+  end;
 end;
 
 procedure TDrawForm.MoveDownMenuItemClick(Sender: TObject);

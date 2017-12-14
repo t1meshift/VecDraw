@@ -23,7 +23,8 @@ type
     function FBottomRight: TDoublePoint;
   public
     Selected: boolean;
-    property Vertexes: TDPointList read FVertexes;
+    constructor Create;
+    property Vertexes: TDPointList read FVertexes write FVertexes;
     property TopLeftBorder: TDoublePoint read FTopLeft;
     property BottomRightBorder: TDoublePoint read FBottomRight;
     procedure Draw(ACanvas: TCanvas); virtual; abstract;
@@ -55,11 +56,12 @@ type
     destructor Destroy; override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
-    property LineWidth: TIntegerParam read FLineWidth write FLineWidth;
     property LineWidthCanvas: integer read GetCanvasLineWidth;
+    function GetParams: TToolParamList; override;
+  published
+    property LineWidth: TIntegerParam read FLineWidth write FLineWidth;
     property LineColor: TColorParam read FLineColor write FLineColor;
     property LineStyle: TLineStyleParam read FLineStyle write FLineStyle;
-    function GetParams: TToolParamList; override;
   end;
 
   { TFillableFigure }
@@ -74,9 +76,10 @@ type
       ALineColor: TColorParam; ALineStyle: TLineStyleParam;
       AFillColor: TColorParam; AFillStyle: TFillStyleParam);
     destructor Destroy; override;
+    function GetParams: TToolParamList; override;
+  published
     property FillColor: TColorParam read FFillColor write FFillColor;
     property FillStyle: TFillStyleParam read FFillStyle write FFillStyle;
-    function GetParams: TToolParamList; override;
   end;
 
   { TRegionSelection }
@@ -123,9 +126,10 @@ type
     destructor Destroy; override;
     procedure Draw(ACanvas: TCanvas); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
+    function GetParams: TToolParamList; override;
+  published
     property RoundX: TIntegerParam read FRoundX write FRoundX;
     property RoundY: TIntegerParam read FRoundY write FRoundY;
-    function GetParams: TToolParamList; override;
   end;
 
   { TEllipse }
@@ -141,8 +145,7 @@ type
   TPolygon = class(TFillableFigure)
   private
     FVertexCount: TIntegerParam;
-    StartPoint: TDoublePoint;
-    EndPoint: TPoint;
+    FStartPoint, FEndPoint: TDoublePoint;
   public
     constructor Create(X, Y: double; ALineWidth: TIntegerParam;
       ALineColor: TColorParam; ALineStyle: TLineStyleParam;
@@ -152,8 +155,13 @@ type
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
-    property VertexCount: TIntegerParam read FVertexCount write FVertexCount;
     function GetParams: TToolParamList; override;
+  published
+    property VertexCount: TIntegerParam read FVertexCount write FVertexCount;
+    property StartPointX: double read FStartPoint.x write FStartPoint.x;
+    property StartPointY: double read FStartPoint.y write FStartPoint.y;
+    property EndPointX: double read FStartPoint.x write FEndPoint.x;
+    property EndPointY: double read FEndPoint.y write FEndPoint.y;
   end;
 
 function GetSelectionTopLeft: TDoublePoint;
@@ -680,9 +688,9 @@ begin
     AFillColor, AFillStyle);
   AVertexCount.Assign(FVertexCount);
   SetLength(FVertexes, VertexCount.Value);
-  StartPoint := DoublePoint(X, Y);
+  FStartPoint := DoublePoint(X, Y);
   ScreenPoint := WorldToCanvas(X, Y);
-  EndPoint := ScreenPoint;
+  FEndPoint := FStartPoint;
   MouseMove(ScreenPoint.x, ScreenPoint.y);
 end;
 
@@ -696,10 +704,14 @@ procedure TPolygon.Draw(ACanvas: TCanvas);
 var
   i: integer;
   CanvasVertexes: TPointList;
+  CanvasEndPoint: TPoint;
 begin
   SetCanvasStyles(ACanvas);
   if Length(FVertexes) <> VertexCount.Value then
-    MouseMove(EndPoint.x, EndPoint.y);
+  begin
+    CanvasEndPoint := WorldToCanvas(FEndPoint);
+    MouseMove(CanvasEndPoint.x, CanvasEndPoint.y);
+  end;
   SetLength(CanvasVertexes, Length(FVertexes));
   for i := Low(FVertexes) to High(FVertexes) do
     CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
@@ -712,18 +724,17 @@ var
   CurrentRotation, Radius: double;
   WorldPos: TDoublePoint;
 begin
-  EndPoint.x := X;
-  EndPoint.y := Y;
-  WorldPos := CanvasToWorld(X, Y);
-  CurrentRotation := arctan2(WorldPos.y - StartPoint.y, WorldPos.x - StartPoint.x);
-  Radius := Dist(StartPoint, WorldPos);
+  FEndPoint := CanvasToWorld(X, Y);
+  WorldPos := FEndPoint;
+  CurrentRotation := arctan2(WorldPos.y - FStartPoint.y, WorldPos.x - FStartPoint.x);
+  Radius := Dist(FStartPoint, WorldPos);
   if Length(FVertexes) <> VertexCount.Value then
     SetLength(FVertexes, VertexCount.Value);
   for i := Low(FVertexes) to High(FVertexes) do
   begin
-    FVertexes[i].x := StartPoint.x + Radius * cos(CurrentRotation +
+    FVertexes[i].x := FStartPoint.x + Radius * cos(CurrentRotation +
       (i * 2 * pi / VertexCount.Value));
-    FVertexes[i].y := StartPoint.y + Radius * sin(CurrentRotation +
+    FVertexes[i].y := FStartPoint.y + Radius * sin(CurrentRotation +
       (i * 2 * pi / VertexCount.Value));
   end;
 end;
@@ -845,6 +856,11 @@ begin
     Result.x := max(Result.x, i.x);
     Result.y := max(Result.y, i.y);
   end;
+end;
+
+constructor TFigure.Create;
+begin
+  //Dummy construrtor
 end;
 
 function TFigure.InRect(RectTL, RectBR: TDoublePoint): boolean;
@@ -1049,4 +1065,7 @@ begin
   DeleteObject(RegionFigure);
 end;
 
+initialization
+RegisterClasses(TFigureClassList.Create(TPolyLine, TLine, TRectangle, TEllipse,
+  TRoundRect, TPolygon));
 end.

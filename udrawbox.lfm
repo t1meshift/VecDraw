@@ -1,7 +1,7 @@
 object DrawForm: TDrawForm
-  Left = 256
+  Left = 418
   Height = 654
-  Top = 38
+  Top = 43
   Width = 1055
   Caption = 'DrawForm'
   ClientHeight = 634
@@ -169,6 +169,16 @@ object DrawForm: TDrawForm
     left = 232
     object FileMenuItem: TMenuItem
       Caption = 'File'
+      object LoadMenuItem: TMenuItem
+        Caption = 'Load file...'
+        ShortCut = 16463
+        OnClick = LoadMenuItemClick
+      end
+      object SaveMenuItem: TMenuItem
+        Caption = 'Save as...'
+        ShortCut = 16467
+        OnClick = SaveMenuItemClick
+      end
       object ExitMenuItem: TMenuItem
         Caption = 'Exit'
         ShortCut = 32883
@@ -226,5 +236,17 @@ object DrawForm: TDrawForm
   end
   object EditorActionList: TActionList
     left = 152
+  end
+  object OpenImgDialog: TOpenDialog
+    Title = 'Open image...'
+    Filter = 'VecDraw images|*.vd'
+    Options = [ofFileMustExist, ofEnableSizing, ofViewDetail]
+    left = 312
+  end
+  object SaveImgDialog: TSaveDialog
+    Title = 'Save image...'
+    Filter = 'VecDraw images|*.vd'
+    Options = [ofPathMustExist, ofEnableSizing, ofViewDetail]
+    left = 400
   end
 end

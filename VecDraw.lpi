@@ -33,7 +33,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="9">
       <Unit0>
         <Filename Value="VecDraw.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -74,6 +74,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UToolParams"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="uhistory.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UHistory"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="ufileworker.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UFileWorker"/>
+      </Unit8>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -102,7 +112,6 @@
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <UseHeaptrc Value="True"/>
         <TrashVariables Value="True"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
