@@ -146,6 +146,7 @@ var
 begin
   DrawForm.DoubleBuffered := True;
   DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+  SaveImgDialog.FileName := CurrentFile;
   IsDrawing := False;
   IconsPerRow := ToolsPanel.Width div (TOOL_BUTTON_SIZE +
     TOOL_BUTTON_MARGIN + TOOL_BUTTON_PADDING);
