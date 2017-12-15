@@ -10,6 +10,7 @@ uses
 
 const
   FILE_HEADER = 'VECDRAW';
+  VERSION = 1;
   NEW_FILE_NAME = 'New Image.vd';
 
 var
@@ -115,6 +116,7 @@ begin
     Root := TJSONObject.Create;
     Root.CompressedJSON := true;
     Root.Add(FILE_HEADER, FiguresJSON.Clone);
+    Root.Add('version', VERSION);
     FreeAndNil(FiguresJSON);
     AssignFile(f, FileName);
     Rewrite(f);
@@ -135,7 +137,7 @@ var
   f: TFileStream;
   Root, CurrFigureJSON, PropJSON: TJSONObject;
   FiguresJSON, FigureVertexesJSON: TJSONArray;
-  i, j: integer;
+  i, j, FileVersion: integer;
   k, l: TJSONEnum;
   FigureClassName, PropClassName: string;
   FigureClass, PropClass: TPersistentClass;
@@ -147,6 +149,11 @@ begin
   f := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   try
     Root := TJSONObject(GetJSON(f));
+
+    FileVersion := Root.Get('version', -1);
+    if FileVersion = -1 then
+      FileVersion := 1; //assuming it's the first version
+
     FiguresJSON := TJSONArray(Root.GetPath(FILE_HEADER));
     for i := 0 to FiguresJSON.Count-1 do
     begin
@@ -162,6 +169,7 @@ begin
           FigureVertexesJSON.Arrays[j].Floats[0],
           FigureVertexesJSON.Arrays[j].Floats[1]);
       end;
+      FreeAndNil(FigureVertexesJSON);
       CurrFigure.Vertexes := FigureVertexes;
       SetLength(FigureVertexes, 0);
       for k in CurrFigureJSON do

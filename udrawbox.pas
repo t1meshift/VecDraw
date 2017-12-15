@@ -17,6 +17,7 @@ type
     CanvasPropsPanel: TPanel;
     DeleteSelectedMenuItem: TMenuItem;
     LoadMenuItem: TMenuItem;
+    NewMenuItem: TMenuItem;
     OpenImgDialog: TOpenDialog;
     SaveImgDialog: TSaveDialog;
     SaveMenuItem: TMenuItem;
@@ -49,6 +50,7 @@ type
     procedure LoadMenuItemClick(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
+    procedure NewMenuItemClick(Sender: TObject);
     procedure SaveMenuItemClick(Sender: TObject);
     procedure MoveDownMenuItemClick(Sender: TObject);
     procedure MoveUpMenuItemClick(Sender: TObject);
@@ -213,6 +215,13 @@ begin
     ZoomPoint(CanvasToWorld(MousePos), Scale / 2);
   SetScrollBars;
   MainPaintBox.Invalidate;
+end;
+
+procedure TDrawForm.NewMenuItemClick(Sender: TObject);
+begin
+  ClearAllMenuItemClick(nil);
+  CurrentFile := NEW_FILE_NAME;
+  DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
 end;
 
 procedure TDrawForm.SaveMenuItemClick(Sender: TObject);
@@ -431,6 +440,8 @@ procedure TDrawForm.ClearAllMenuItemClick(Sender: TObject);
 var
   i: integer;
 begin
+  SetScale(1); //100%
+  CanvasOffset := DoublePoint(0,0);
   for i := Low(CanvasItems) to High(CanvasItems) do
     FreeAndNil(CanvasItems[i]);
   SetLength(CanvasItems, 0);

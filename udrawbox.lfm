@@ -169,6 +169,11 @@ object DrawForm: TDrawForm
     left = 232
     object FileMenuItem: TMenuItem
       Caption = 'File'
+      object NewMenuItem: TMenuItem
+        Caption = 'New image'
+        ShortCut = 16462
+        OnClick = NewMenuItemClick
+      end
       object LoadMenuItem: TMenuItem
         Caption = 'Load file...'
         ShortCut = 16463
