@@ -40,6 +40,7 @@ type
 
   TFigureList = array of TFigure;
   TFigureClass = class of TFigure;
+  TFigureClassList = array of TPersistentClass;
 
   { TDrawableFigure }
 
@@ -160,7 +161,7 @@ type
     property VertexCount: TIntegerParam read FVertexCount write FVertexCount;
     property StartPointX: double read FStartPoint.x write FStartPoint.x;
     property StartPointY: double read FStartPoint.y write FStartPoint.y;
-    property EndPointX: double read FStartPoint.x write FEndPoint.x;
+    property EndPointX: double read FEndPoint.x write FEndPoint.x;
     property EndPointY: double read FEndPoint.y write FEndPoint.y;
   end;
 
