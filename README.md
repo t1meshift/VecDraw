@@ -14,6 +14,8 @@ Or just use Telegram: my nickname is \@autist.
 3. Zooming and moving a canvas (done)
 4. Rounded rectangle tool (done)
 5. Polygon tool (done)
+6. Modifying selected figures and changing their z-order (done)
+7. Saving and loading from a file (done)
 - others coming soon 
 
 ## TODO list:
