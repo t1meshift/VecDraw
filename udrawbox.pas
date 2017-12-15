@@ -142,7 +142,6 @@ begin
     if FileIsReadable(System.ParamStr(1)) then
     begin
       LoadFile(System.ParamStr(1));
-      OpenImgDialog.FileName := CurrentFile;
     end;
 end;
 
