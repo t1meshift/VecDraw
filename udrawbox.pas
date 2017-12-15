@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
   ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UTools, UFigures, Types,
-  UTransform, UToolParams, UFileWorker;
+  UTransform, UToolParams, UFileWorker, LazFileUtils;
 
 type
 
@@ -81,6 +81,7 @@ type
   end;
 
 procedure CalculateWorldBorders;
+procedure ParseCmdArgs;
 
 const
   TOOL_BUTTON_SIZE: integer = 32;
@@ -135,6 +136,16 @@ begin
     end;
 end;
 
+procedure ParseCmdArgs;
+begin
+  if system.ParamCount > 0 then
+    if FileIsReadable(System.ParamStr(1)) then
+    begin
+      LoadFile(System.ParamStr(1));
+      OpenImgDialog.FileName := CurrentFile;
+    end;
+end;
+
 {$R *.lfm}
 
 { TDrawForm }
@@ -146,6 +157,7 @@ var
   CurrentIcon: TPicture;
   IconsPerRow: integer;
 begin
+  ParseCmdArgs;
   DrawForm.DoubleBuffered := True;
   DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
   SaveImgDialog.FileName := CurrentFile;
@@ -163,7 +175,8 @@ begin
     b.OnClick := @ToolButtonClick;
 
     CurrentIcon := TPicture.Create;
-    CurrentIcon.LoadFromFile('./icons/' + ToolsBase[i].ClassName + '.png');
+    CurrentIcon.LoadFromFile(ExtractFilePath(Application.ExeName) +
+      './icons/' + ToolsBase[i].ClassName + '.png');
     b.Glyph := CurrentIcon.Bitmap;
     CurrentIcon.Free;
 
