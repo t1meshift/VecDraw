@@ -6,8 +6,8 @@ unit UFigures;
 interface
 
 uses
-  Classes, SysUtils, Graphics, UTransform, Windows, Math, Controls, UToolParams,
-  TypInfo;
+  Classes, SysUtils, Graphics, UTransform, LCLType, LCLIntf, Math, Controls,
+  UToolParams, TypInfo;
 
 type
 
@@ -33,7 +33,7 @@ type
     function GetVertexIndexAtPos(const APoint: TPoint): integer;
     function GetVertexIndexAtPos(const APoint: TDoublePoint): integer;
     function UnderPoint(const APoint: TDoublePoint): boolean; virtual; abstract;
-    procedure MoveFigure(dx, dy: double);
+    procedure MoveFigure(dx, dy: double); virtual;
     procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint); virtual;
     function GetParams: TToolParamList; virtual; abstract;
   end;
@@ -156,6 +156,7 @@ type
     procedure Draw(ACanvas: TCanvas); override;
     procedure MouseMove(X, Y: integer); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
+    procedure MoveFigure(dx, dy: double); override;
     function GetParams: TToolParamList; override;
   published
     property VertexCount: TIntegerParam read FVertexCount write FVertexCount;
@@ -754,6 +755,15 @@ begin
   CanvasPoint := WorldToCanvas(APoint);
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
+end;
+
+procedure TPolygon.MoveFigure(dx, dy: double);
+begin
+  inherited MoveFigure(dx,dy);
+  StartPointX := StartPointX + dx;
+  StartPointY := StartPointY + dy;
+  EndPointX := EndPointX + dx;
+  EndPointY := EndPointY + dy;
 end;
 
 function TPolygon.GetParams: TToolParamList;

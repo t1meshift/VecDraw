@@ -112,6 +112,7 @@
     </CodeGeneration>
     <Linking>
       <Debugging>
+        <UseHeaptrc Value="True"/>
         <TrashVariables Value="True"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
@@ -122,6 +123,11 @@
       </Options>
     </Linking>
     <Other>
+      <Verbosity>
+        <ShowDebugInfo Value="True"/>
+        <ShowExecInfo Value="True"/>
+        <ShowHintsForUnusedUnitsInMainSrc Value="True"/>
+      </Verbosity>
       <CustomOptions Value="-dDEBUG"/>
     </Other>
   </CompilerOptions>
