@@ -751,7 +751,7 @@ begin
   SetLength(CanvasVertexes, VertexCount.Value);
   for i := Low(FVertexes) to High(FVertexes) do
     CanvasVertexes[i] := WorldToCanvas(FVertexes[i]);
-  RegionFigure := CreatePolygonRgn(CanvasVertexes[0], VertexCount.Value, WINDING);
+  RegionFigure := CreatePolygonRgn(@CanvasVertexes[0], VertexCount.Value, WINDING);
   CanvasPoint := WorldToCanvas(APoint);
   Result := PtInRegion(RegionFigure, CanvasPoint.x, CanvasPoint.y);
   DeleteObject(RegionFigure);
