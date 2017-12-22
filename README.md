@@ -4,6 +4,9 @@ Vector graphic editor licensed with Unlicense. It is being written as training p
 ## Wanna write off my code?
 No problem. I wish you could understand it...
 
+## How about Linux compilation?
+At least it compiles and works. Tested with Lazarus 1.6.4 x86_64 on the latest Manjaro.
+
 ## Caught a bug?
 Well... You can send add an issue into my repo.
 Or just use Telegram: my nickname is \@autist.
