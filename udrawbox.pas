@@ -8,18 +8,32 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
   ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UTools, UFigures, Types,
   UTransform, UToolParams, UFileWorker, LazFileUtils, FPimage, UHistory,
-  UAppState;
+  UAppState, UClipboard;
 
 type
 
   { TDrawForm }
 
   TDrawForm = class(TForm)
+    DeleteSelectedAction: TAction;
+    CutMenuItem: TMenuItem;
+    CopyMenuItem: TMenuItem;
+    CopyPopupItem: TMenuItem;
+    DeletePopupItem: TMenuItem;
+    PopupDelimeter: TMenuItem;
+    PastePopupItem: TMenuItem;
+    PasteMenuItem: TMenuItem;
+    ClipboardSeparator: TMenuItem;
+    CutPopupItem: TMenuItem;
+    PasteAction: TAction;
+    CutAction: TAction;
+    CopyAction: TAction;
     CanvasPropsPanel: TPanel;
     DeleteSelectedMenuItem: TMenuItem;
     LoadMenuItem: TMenuItem;
     ExportToBitmapMenuItem: TMenuItem;
     ExportBitmapDialog: TSaveDialog;
+    ClipboardPopupMenu: TPopupMenu;
     UndoRedoSeparator: TMenuItem;
     RedoMenuItem: TMenuItem;
     UndoMenuItem: TMenuItem;
@@ -51,7 +65,11 @@ type
     EditMenuItem: TMenuItem;
     MainPaintBox: TPaintBox;
     procedure ClearAllMenuItemClick(Sender: TObject);
-    procedure DeleteSelectedMenuItemClick(Sender: TObject);
+    procedure ClipboardPopupMenuPopup(Sender: TObject);
+    procedure CopyActionExecute(Sender: TObject);
+    procedure CutActionExecute(Sender: TObject);
+    procedure DeleteSelectedActionExecute(Sender: TObject);
+    procedure EditMenuItemClick(Sender: TObject);
     procedure ExportToBitmapMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -59,6 +77,7 @@ type
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
     procedure NewMenuItemClick(Sender: TObject);
+    procedure PasteActionExecute(Sender: TObject);
     procedure RedoMenuItemClick(Sender: TObject);
     procedure SaveAsMenuItemClick(Sender: TObject);
     procedure MoveDownMenuItemClick(Sender: TObject);
@@ -252,12 +271,24 @@ begin
   SetWindowTitle(DrawForm, CurrentFile);
 end;
 
+procedure TDrawForm.PasteActionExecute(Sender: TObject);
+begin
+  RemoveSelection;
+  PasteFromClipboard;
+  History.PushState;
+  SetScrollBars;
+  Invalidate;
+end;
+
 procedure TDrawForm.RedoMenuItemClick(Sender: TObject);
 begin
   if History.CanRedo then
   begin
     History.Redo;
+    UpdateParamsPanel;
     SetWindowTitle(DrawForm, CurrentFile);
+    if not History.CanRedo then
+      RedoMenuItem.Enabled := false;
   end
   else
     RedoMenuItem.Enabled := false;
@@ -412,7 +443,10 @@ begin
   if History.CanUndo then
   begin
     History.Undo;
+    UpdateParamsPanel;
     SetWindowTitle(DrawForm, CurrentFile);
+    if not History.CanUndo then
+      UndoMenuItem.Enabled := false;
   end
   else
     UndoMenuItem.Enabled := false;
@@ -457,7 +491,8 @@ begin
   CurrentTool.MouseDown(X, Y, Button);
   if CurrentTool.Figure = nil then
     IsDrawing := False;
-
+  if Button = mbMiddle then
+    ClipboardPopupMenu.PopUp;
   MainPaintBox.Invalidate;
   SetScrollBars;
 end;
@@ -542,13 +577,46 @@ begin
   SetScrollBars;
 end;
 
-procedure TDrawForm.DeleteSelectedMenuItemClick(Sender: TObject);
+procedure TDrawForm.ClipboardPopupMenuPopup(Sender: TObject);
+begin
+  CutPopupItem.Enabled := HasSelection;
+  CopyPopupItem.Enabled := HasSelection;
+  DeletePopupItem.Enabled := HasSelection;
+end;
+
+procedure TDrawForm.CopyActionExecute(Sender: TObject);
+begin
+  CopySelected;
+  Invalidate;
+end;
+
+procedure TDrawForm.CutActionExecute(Sender: TObject);
+begin
+  CopySelected;
+  DeleteSelected;
+  History.PushState;
+  SetScrollBars;
+  Invalidate;
+end;
+
+procedure TDrawForm.DeleteSelectedActionExecute(Sender: TObject);
 begin
   DeleteSelected;
   History.PushState;
   SetScrollBars;
   UpdateParamsPanel;
   Invalidate;
+end;
+
+procedure TDrawForm.EditMenuItemClick(Sender: TObject);
+begin
+  CutMenuItem.Enabled := HasSelection;
+  CopyMenuItem.Enabled := HasSelection;
+  PasteMenuItem.Enabled := HasSelection;
+  DeleteSelectedMenuItem.Enabled := HasSelection;
+  MoveUpMenuItem.Enabled := HasSelection;
+  MoveDownMenuItem.Enabled := HasSelection;
+  RemoveSelectionMenuItem.Enabled := HasSelection;
 end;
 
 procedure TDrawForm.ExportToBitmapMenuItemClick(Sender: TObject);
@@ -560,12 +628,7 @@ begin
   if ExportBitmapDialog.Execute then
   begin
     try
-      bmp := TBitmap.Create;
-      bmp.Width := CanvasWidth;
-      bmp.Height := CanvasHeight;
-      bmp.Canvas.FloodFill(0, 0, clWhite, fsBorder);
-      for i in CanvasItems do
-        i.Draw(bmp.Canvas);
+      bmp := GetFiguresBitmap;
       case LowerCase(ExtractFileExt(ExportBitmapDialog.FileName)) of
         '.bmp':
         begin

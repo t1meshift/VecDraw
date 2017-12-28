@@ -33,7 +33,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="10">
+    <Units Count="11">
       <Unit0>
         <Filename Value="VecDraw.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -89,6 +89,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UAppState"/>
       </Unit9>
+      <Unit10>
+        <Filename Value="uclipboard.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UClipboard"/>
+      </Unit10>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -117,7 +122,6 @@
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <UseHeaptrc Value="True"/>
         <TrashVariables Value="True"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>

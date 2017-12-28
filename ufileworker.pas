@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, UFigures, UToolParams, UTransform, typinfo, fpjson,
-  jsonparser;
+  jsonparser, Graphics, math, UHistory;
 
 const
   FILE_HEADER = 'VECDRAW';
@@ -17,6 +17,9 @@ var
   CurrentFile: string;
 
 function GetProps(AObject: TObject; out APropList: PPropList): integer;
+function GetFiguresJSON(SelectedOnly: boolean = false): TJSONObject;
+function GetFiguresFromJSON(Root: TJSONObject): TFigureList;
+function GetFiguresBitmap(SelectedOnly: boolean = false): TBitmap;
 function SaveFile(FileName: string): integer;
 function LoadFile(FileName: string): integer;
 
@@ -32,11 +35,10 @@ begin
   Result := PropCount;
 end;
 
-function SaveFile(FileName: string): integer;
+function GetFiguresJSON(SelectedOnly: boolean): TJSONObject;
 var
-  f: text;
   CurrentFigure: TFigure;
-  Root, FigureJSON, CurrPropJSON: TJSONObject;
+  FigureJSON, CurrPropJSON: TJSONObject;
   FigureProps, PropProps: PPropList;
   i, j, PropCount, PropPropCount: integer;
   FiguresJSON, VertexesJSON, CurrVertexJSON: TJSONArray;
@@ -44,10 +46,9 @@ var
   ParamProp: TToolParam;
   v: TDoublePoint;
 begin
-  Result := 0;
-  try
-    FiguresJSON := TJSONArray.Create;
-    for CurrentFigure in CanvasItems do
+  FiguresJSON := TJSONArray.Create;
+  for CurrentFigure in CanvasItems do
+    if CurrentFigure.Selected or (not SelectedOnly) then
     begin
       FigureJSON := TJSONObject.Create;
       FigureJSON.Add('type', CurrentFigure.ClassName);
@@ -113,11 +114,151 @@ begin
       FiguresJSON.Add(FigureJSON.Clone);
       FreeAndNil(FigureJSON);
     end;
-    Root := TJSONObject.Create;
+  Result := TJSONObject.Create;
+  Result.Add(FILE_HEADER, FiguresJSON.Clone);
+  Result.Add('version', VERSION);
+  FreeAndNil(FiguresJSON);
+end;
+
+function GetFiguresFromJSON(Root: TJSONObject): TFigureList;
+var
+  CurrFigureJSON, PropJSON: TJSONObject;
+  FiguresJSON, FigureVertexesJSON: TJSONArray;
+  i, j, FileVersion: integer;
+  k, l: TJSONEnum;
+  FigureClassName, PropClassName: string;
+  FigureClass, PropClass: TPersistentClass;
+  CurrFigure: TFigure;
+  CurrProp: TToolParam;
+  FigureVertexes: TDPointList;
+begin
+  SetLength(Result, 0);
+  FileVersion := Root.Get('version', -1);
+  if FileVersion = -1 then
+    FileVersion := 1; //assuming it's the first version
+
+  FiguresJSON := TJSONArray(Root.GetPath(FILE_HEADER));
+  for i := 0 to FiguresJSON.Count-1 do
+  begin
+    CurrFigureJSON := FiguresJSON.Objects[i];
+    FigureClassName := CurrFigureJSON.GetPath('type').AsString;
+    FigureClass := FindClass(FigureClassName);
+    CurrFigure := FigureClass.Create as TFigure;
+    FigureVertexesJSON := CurrFigureJSON.GetPath('vertexes') as TJSONArray;
+    for j := 0 to FigureVertexesJSON.Count-1 do
+    begin
+      SetLength(FigureVertexes, Length(FigureVertexes)+1);
+      FigureVertexes[High(FigureVertexes)] := DoublePoint(
+        FigureVertexesJSON.Arrays[j].Floats[0],
+        FigureVertexesJSON.Arrays[j].Floats[1]);
+    end;
+    CurrFigure.Vertexes := FigureVertexes;
+    SetLength(FigureVertexes, 0);
+    for k in CurrFigureJSON do
+    begin
+      if (k.Key = 'class') or (k.Key = 'vertexes') then
+        Continue;
+      case k.Value.JSONType of
+        jtNumber:
+        begin
+          SetFloatProp(CurrFigure, k.Key, k.Value.AsFloat);
+        end;
+        jtObject:
+        begin
+          PropJSON := k.Value as TJSONObject;
+          PropClassName := PropJSON.Get('class');
+          PropClass := FindClass(PropClassName);
+          CurrProp := PropClass.Create as TToolParam;
+          for l in PropJSON do
+          begin
+            case l.Value.JSONType of
+              jtString:
+              begin
+                if l.Key = 'Name' then
+                  CurrProp.Name := l.Value.AsString
+                else
+                if l.Key = 'class' then
+                  Continue
+                else
+                begin
+                  SetEnumProp(CurrProp, l.Key, l.Value.AsString);
+                end;
+              end;
+              jtNumber:
+              begin
+                SetInt64Prop(CurrProp, l.Key, l.Value.AsInteger);
+              end;
+            end;
+          end;
+          SetObjectProp(CurrFigure, k.Key, CurrProp);
+        end;
+      end;
+    end;
+    SetLength(Result, Length(Result) + 1);
+    Result[High(Result)] := CurrFigure;
+  end;
+end;
+
+function GetFiguresBitmap(SelectedOnly: boolean): TBitmap;
+var
+  i: TFigure;
+  TL, BR: TDoublePoint;
+  CanvasTL, CanvasBR: TPoint;
+  FirstFigure: boolean;
+begin
+  Result := TBitmap.Create;
+  FirstFigure := true;
+  TL := DoublePoint(0,0);
+  for i in CanvasItems do
+    if i.Selected or (not SelectedOnly) then
+    begin
+      if FirstFigure then
+      begin
+        TL := i.TopLeftBorder;
+        BR := i.BottomRightBorder;
+        FirstFigure := false;
+      end
+      else
+      begin
+        TL.x := min(TL.x, i.TopLeftBorder.x);
+        TL.y := min(TL.y, i.TopLeftBorder.y);
+        BR.x := max(BR.x, i.BottomRightBorder.x);
+        BR.y := max(BR.y, i.BottomRightBorder.y);
+      end;
+    end;
+
+  SetScale(1);
+  CanvasOffset := TL;
+  CanvasTL := WorldToCanvas(TL);
+  CanvasBR := WorldToCanvas(BR);
+
+  with Result do
+  begin
+    Width := CanvasBR.x - CanvasTL.x + PADDING;
+    Height := CanvasBR.y - CanvasTL.y + PADDING;
+    Canvas.Brush.Style := bsSolid;
+    Canvas.Brush.Color := clWhite;
+    Canvas.Pen.Style := psClear;
+    Canvas.Rectangle(-1, -1, Width+1, Height+1);
+  end;
+
+  for i in CanvasItems do
+    if i.Selected or (not SelectedOnly) then
+      i.Draw(Result.Canvas);
+
+  CanvasOffset := History.GetCurrentState.Offset;
+  SetScale(History.GetCurrentState.CanvasScale);
+end;
+
+function SaveFile(FileName: string): integer;
+var
+  f: text;
+  Root: TJSONObject;
+begin
+  Result := 0;
+  try
+    Root := GetFiguresJSON;
     Root.CompressedJSON := true;
-    Root.Add(FILE_HEADER, FiguresJSON.Clone);
-    Root.Add('version', VERSION);
-    FreeAndNil(FiguresJSON);
     AssignFile(f, FileName);
     Rewrite(f);
     System.Write(f, Root.AsJSON);
@@ -136,85 +277,13 @@ end;
 function LoadFile(FileName: string): integer;
 var
   f: TFileStream;
-  Root, CurrFigureJSON, PropJSON: TJSONObject;
-  FiguresJSON, FigureVertexesJSON: TJSONArray;
-  i, j, FileVersion: integer;
-  k, l: TJSONEnum;
-  FigureClassName, PropClassName: string;
-  FigureClass, PropClass: TPersistentClass;
-  CurrFigure: TFigure;
-  CurrProp: TToolParam;
-  FigureVertexes: TDPointList;
+  Root: TJSONObject;
 begin
   Result := 0;
   f := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   try
     Root := TJSONObject(GetJSON(f));
-
-    FileVersion := Root.Get('version', -1);
-    if FileVersion = -1 then
-      FileVersion := 1; //assuming it's the first version
-
-    FiguresJSON := TJSONArray(Root.GetPath(FILE_HEADER));
-    for i := 0 to FiguresJSON.Count-1 do
-    begin
-      CurrFigureJSON := FiguresJSON.Objects[i];
-      FigureClassName := CurrFigureJSON.GetPath('type').AsString;
-      FigureClass := FindClass(FigureClassName);
-      CurrFigure := FigureClass.Create as TFigure;
-      FigureVertexesJSON := CurrFigureJSON.GetPath('vertexes') as TJSONArray;
-      for j := 0 to FigureVertexesJSON.Count-1 do
-      begin
-        SetLength(FigureVertexes, Length(FigureVertexes)+1);
-        FigureVertexes[High(FigureVertexes)] := DoublePoint(
-          FigureVertexesJSON.Arrays[j].Floats[0],
-          FigureVertexesJSON.Arrays[j].Floats[1]);
-      end;
-      CurrFigure.Vertexes := FigureVertexes;
-      SetLength(FigureVertexes, 0);
-      for k in CurrFigureJSON do
-      begin
-        if (k.Key = 'class') or (k.Key = 'vertexes') then
-          Continue;
-        case k.Value.JSONType of
-          jtNumber:
-          begin
-            SetFloatProp(CurrFigure, k.Key, k.Value.AsFloat);
-          end;
-          jtObject:
-          begin
-            PropJSON := k.Value as TJSONObject;
-            PropClassName := PropJSON.Get('class');
-            PropClass := FindClass(PropClassName);
-            CurrProp := PropClass.Create as TToolParam;
-            for l in PropJSON do
-            begin
-              case l.Value.JSONType of
-                jtString:
-                begin
-                  if l.Key = 'Name' then
-                    CurrProp.Name := l.Value.AsString
-                  else
-                  if l.Key = 'class' then
-                    Continue
-                  else
-                  begin
-                    SetEnumProp(CurrProp, l.Key, l.Value.AsString);
-                  end;
-                end;
-                jtNumber:
-                begin
-                  SetInt64Prop(CurrProp, l.Key, l.Value.AsInteger);
-                end;
-              end;
-            end;
-            SetObjectProp(CurrFigure, k.Key, CurrProp);
-          end;
-        end;
-      end;
-      SetLength(CanvasItems, Length(CanvasItems) + 1);
-      CanvasItems[High(CanvasItems)] := CurrFigure;
-    end;
+    CanvasItems := GetFiguresFromJSON(Root);
     FreeAndNil(f);
     FreeAndNil(Root);
     CurrentFile := FileName;

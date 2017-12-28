@@ -181,6 +181,7 @@ procedure RemoveSelection;
 procedure DeleteSelected;
 procedure MoveSelectedOnTop;
 procedure MoveSelectedOnBottom;
+function HasSelection: boolean;
 function GetSelectionParams: TToolParamList;
 function CloneCanvasItems: TFigureList;
 function CloneFigures(Src: TFigureList): TFigureList;
@@ -493,6 +494,16 @@ begin
       CanvasItems[i] := t;
     end;
   end;
+end;
+
+function HasSelection: boolean;
+var
+  f: TFigure;
+begin
+  Result := false;
+  for f in CanvasItems do
+    if f.Selected then
+      exit(true);
 end;
 
 function GetSelectionParams: TToolParamList;
