@@ -19,6 +19,8 @@ Or just use Telegram: my nickname is \@autist.
 5. Polygon tool (done)
 6. Modifying selected figures and changing their z-order (done)
 7. Saving and loading from a file (done)
+8. Undo/redo (done)
+9. Clipboard (done)
 - others coming soon 
 
 ## TODO list:
