@@ -5,7 +5,7 @@ unit UToolParams;
 interface
 
 uses
-  Classes, SysUtils, Controls, Graphics, ExtCtrls, Dialogs, Spin,
+  Classes, SysUtils, Controls, Graphics, ExtCtrls, Dialogs, Spin, UAppState,
   StdCtrls;
 
 type
@@ -41,7 +41,7 @@ type
     constructor Create(AParamName: string;
       AMinValue, AMaxValue, ADefaultValue: integer);
     function ToControl(AParentPanel: TPanel): TControl; override;
-    procedure Assign(var Source: TIntegerParam);
+    function Clone: TIntegerParam;
   published
     property Value: integer read FValue write FSetValue;
     property MinValue: integer read FMinValue write FMinValue;
@@ -57,7 +57,7 @@ type
   public
     constructor Create(AParamName: string; ADefaultValue: TColor);
     function ToControl(AParentPanel: TPanel): TControl; override;
-    procedure Assign(var Source: TColorParam);
+    function Clone: TColorParam;
   published
     property Value: TColor read FValue write FValue;
   end;
@@ -79,7 +79,7 @@ type
   public
     constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; override;
-    procedure Assign(var Source: TLineStyleParam);
+    function Clone: TLineStyleParam;
   published
     property Value: TPenStyle read FGetLineStyle write SetLineStyle;
   end;
@@ -101,13 +101,13 @@ type
   public
     constructor Create;
     function ToControl(AParentPanel: TPanel): TControl; override;
-    procedure Assign(var Source: TFillStyleParam);
+    function Clone: TFillStyleParam;
   published
     property Value: TBrushStyle read FGetFillStyle write SetFillStyle;
   end;
 
 implementation
-
+uses UHistory;
 { TToolParam }
 
 constructor TToolParam.Create;
@@ -137,7 +137,9 @@ begin
   begin
     for p in AttachedParams do
       (p as TColorParam).FValue := (Sender as TColorButton).ButtonColor;
+    Modified := true;
     (Sender as TControl).GetTopParent.Invalidate;
+    History.PushState;
   end;
 end;
 
@@ -158,11 +160,11 @@ begin
   end;
 end;
 
-procedure TColorParam.Assign(var Source: TColorParam);
+function TColorParam.Clone: TColorParam;
 begin
-  Source := TColorParam.Create(Self.Name, Self.Value);
-  Source.FName := Self.FName;
-  Source.FValue := Self.FValue;
+  Result := TColorParam.Create(Self.Name, Self.Value);
+  Result.FName := Self.FName;
+  Result.FValue := Self.FValue;
 end;
 
 { TIntegerParam }
@@ -186,7 +188,9 @@ begin
   begin
     for p in AttachedParams do
       (p as TIntegerParam).FSetValue((Sender as TSpinEdit).Value);
+    Modified := true;
     (Sender as TControl).GetTopParent.Invalidate;
+    History.PushState;
   end;
 end;
 
@@ -214,11 +218,11 @@ begin
     end;
 end;
 
-procedure TIntegerParam.Assign(var Source: TIntegerParam);
+function TIntegerParam.Clone: TIntegerParam;
 begin
-  Source := TIntegerParam.Create(Self.Name, FMinValue, FMaxValue, Self.Value);
-  Source.FName := Self.FName;
-  Source.FValue := Self.FValue;
+  Result := TIntegerParam.Create(Self.Name, FMinValue, FMaxValue, Self.Value);
+  Result.FName := Self.FName;
+  Result.FValue := Self.FValue;
 end;
 
 { TFillStyleParam }
@@ -252,7 +256,9 @@ begin
   begin
     for p in AttachedParams do
       (p as TFillStyleParam).FFillIndex := (Sender as TComboBox).ItemIndex;
+    Modified := true;
     (Sender as TControl).GetTopParent.Invalidate;
+    History.PushState;
   end;
 end;
 
@@ -300,11 +306,11 @@ begin
   end;
 end;
 
-procedure TFillStyleParam.Assign(var Source: TFillStyleParam);
+function TFillStyleParam.Clone: TFillStyleParam;
 begin
-  Source := TFillStyleParam.Create;
-  Source.FName := Self.FName;
-  Source.FFillIndex := Self.FFillIndex;
+  Result := TFillStyleParam.Create;
+  Result.FName := Self.FName;
+  Result.FFillIndex := Self.FFillIndex;
 end;
 
 { TLineStyleParam }
@@ -338,7 +344,9 @@ begin
   begin
     for p in AttachedParams do
       (p as TLineStyleParam).FLineIndex := (Sender as TComboBox).ItemIndex;
+    Modified := true;
     (Sender as TControl).GetTopParent.Invalidate;
+    History.PushState;
   end;
 end;
 
@@ -384,11 +392,11 @@ begin
   end;
 end;
 
-procedure TLineStyleParam.Assign(var Source: TLineStyleParam);
+function TLineStyleParam.Clone: TLineStyleParam;
 begin
-  Source := TLineStyleParam.Create;
-  Source.FName := Self.FName;
-  Source.FLineIndex := Self.FLineIndex;
+  Result := TLineStyleParam.Create;
+  Result.FName := Self.FName;
+  Result.FLineIndex := Self.FLineIndex;
 end;
 
 initialization

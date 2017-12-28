@@ -14,42 +14,30 @@ type
     Offset: TDoublePoint;
   end;
 
-procedure Undo;
-procedure Redo;
-procedure ClearHistory;
+  { TCanvasHistory }
+
+  TCanvasHistory = class(TPersistent)
+    private
+      FStates: array of TCanvasState;
+      FCurrentStateIndex: integer;
+    public
+      constructor Create;
+      procedure PushState(AState: TCanvasState);
+      procedure PushState(AFigures: TFigureList; AScale: double;
+        AOffset: TDoublePoint);
+      procedure Undo;
+      procedure Redo;
+      procedure Clear;
+      function GetCurrentState: TCanvasState;
+  end;
+
 function CanvasState(AFigures: TFigureList; AScale: double;
   AOffset: TDoublePoint): TCanvasState;
 
 var
-  CanvasHistory: array of TCanvasState;
+  CanvasHistory: TCanvasHistory;
 
 implementation
-
-procedure Undo;
-begin
-  SetLength(CanvasHistory, Length(CanvasHistory)+1);
-  CanvasHistory[High(CanvasHistory)] := CanvasState(CanvasItems, Scale,
-    CanvasOffset);
-  SetLength(CanvasItems, Length(CanvasItems)-1);
-end;
-
-procedure Redo;
-begin
-
-end;
-
-procedure ClearHistory;
-var
-  i, j: integer;
-begin
-  for i := Low(CanvasHistory) to High(CanvasHistory) do
-  begin
-    for j := Low(CanvasHistory[i].Figures) to High(CanvasHistory[i].Figures) do
-      FreeAndNil(CanvasHistory[i].Figures[j]);
-    SetLength((CanvasHistory[i].Figures, 0);
-    CanvasHistory[i] := nil;
-  end;
-end;
 
 function CanvasState(AFigures: TFigureList; AScale: double;
   AOffset: TDoublePoint): TCanvasState;
@@ -60,6 +48,49 @@ begin
     CanvasScale := AScale;
     Offset := AOffset;
   end;
+end;
+
+{ TCanvasHistory }
+
+constructor TCanvasHistory.Create;
+begin
+  FCurrentStateIndex := -1;
+end;
+
+procedure TCanvasHistory.PushState(AState: TCanvasState);
+var
+  i: integer;
+begin
+  inc(FCurrentStateIndex);
+  SetLength(FStates, FCurrentStateIndex);
+  FStates[High(FStates)] := AState;
+end;
+
+procedure TCanvasHistory.PushState(AFigures: TFigureList; AScale: double;
+  AOffset: TDoublePoint);
+begin
+  PushState(CanvasState(AFigures, AScale, AOffset));
+end;
+
+procedure TCanvasHistory.Undo;
+begin
+  FCurrentStateIndex := Max(0, FCurrentStateIndex-1);
+end;
+
+procedure TCanvasHistory.Redo;
+begin
+  FCurrentStateIndex := Min(FCurrentStateIndex+1, High(FStates));
+end;
+
+procedure TCanvasHistory.Clear;
+begin
+  SetLength(FStates, 0);
+  FCurrentStateIndex := -1;
+end;
+
+function TCanvasHistory.GetCurrentState: TCanvasState;
+begin
+  Result := FStates[FCurrentStateIndex];
 end;
 
 end.

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Controls, UFigures, UToolParams, UTransform, Graphics,
-  Math;
+  Math, UAppState, UHistory;
 
 type
 
@@ -154,6 +154,7 @@ type
     DragFigurePrevPoint: TDoublePoint;
     DraggingVertexFigure: TFigure;
     DraggingVertexIndex: integer;
+    FigureModified: boolean;
   public
     constructor Create; override;
     procedure MouseDown(X, Y: integer; Button: TMouseButton); override;
@@ -178,6 +179,7 @@ begin
   SelectionVertexDrag := False;
   DraggingVertexFigure := nil;
   DragFigurePrevPoint := DoublePoint(0, 0);
+  FigureModified := false;
 end;
 
 procedure TModifierTool.MouseDown(X, Y: integer; Button: TMouseButton);
@@ -189,6 +191,7 @@ var
   HasSelectionOnTop: boolean;
 begin
   inherited MouseDown(X, Y, Button);
+  FigureModified := false;
   WorldStartCoord := CanvasToWorld(FStartPoint);
   IsFigureDraggable := False;
   if (FMButton = mbLeft) and (Length(CanvasItems) > 0) then
@@ -277,13 +280,16 @@ begin
   begin
     WorldCurrPoint := CanvasToWorld(X, Y);
     if DraggingVertexIndex <> -1 then
+    begin
       if SelectionVertexDrag then
       begin
         ResizeSelection(DraggingVertexIndex, WorldCurrPoint);
         DraggingVertexIndex := GetSelectionVertexIndexAtPos(Point(X, Y));
       end
       else
-        DraggingVertexFigure.MoveVertex(DraggingVertexIndex, WorldCurrPoint)
+        DraggingVertexFigure.MoveVertex(DraggingVertexIndex, WorldCurrPoint);
+      FigureModified := true;
+    end
     else
     if IsFigureDraggable then
     begin
@@ -292,6 +298,8 @@ begin
       for f in SelectedFigures do
       begin
         f.MoveFigure(dx, dy);
+        if (dx > 0.01) and (dy > 0.01) then
+          FigureModified := true;
         DragFigurePrevPoint := WorldCurrPoint;
       end;
     end;
@@ -305,6 +313,12 @@ begin
   IsFigureDraggable := False;
   SelectionVertexDrag := False;
   DraggingVertexFigure := nil;
+  if FigureModified then
+  begin
+    Modified := true;
+    FigureModified := false;
+    History.PushState;
+  end;
   Result := nil;
 end;
 
@@ -464,6 +478,7 @@ end;
 function TDrawableTool.MouseUp(X, Y: integer): TFigure;
 begin
   Result := FFigure;
+  Modified := true;
   FFigure := nil;
 end;
 

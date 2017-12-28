@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Graphics, UTransform, LCLType, LCLIntf, Math, Controls,
-  UToolParams, TypInfo;
+  UToolParams, TypInfo, UAppState;
 
 type
 
@@ -36,6 +36,7 @@ type
     procedure MoveFigure(dx, dy: double); virtual;
     procedure MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint); virtual;
     function GetParams: TToolParamList; virtual; abstract;
+    function Clone: TFigure; virtual;
   end;
 
   TFigureList = array of TFigure;
@@ -59,6 +60,7 @@ type
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
     property LineWidthCanvas: integer read GetCanvasLineWidth;
     function GetParams: TToolParamList; override;
+    function Clone: TFigure; override;
   published
     property LineWidth: TIntegerParam read FLineWidth write FLineWidth;
     property LineColor: TColorParam read FLineColor write FLineColor;
@@ -78,6 +80,7 @@ type
       AFillColor: TColorParam; AFillStyle: TFillStyleParam);
     destructor Destroy; override;
     function GetParams: TToolParamList; override;
+    function Clone: TFigure; override;
   published
     property FillColor: TColorParam read FFillColor write FFillColor;
     property FillStyle: TFillStyleParam read FFillStyle write FFillStyle;
@@ -128,6 +131,7 @@ type
     procedure Draw(ACanvas: TCanvas); override;
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
     function GetParams: TToolParamList; override;
+    function Clone: TFigure; override;
   published
     property RoundX: TIntegerParam read FRoundX write FRoundX;
     property RoundY: TIntegerParam read FRoundY write FRoundY;
@@ -158,6 +162,7 @@ type
     function UnderPoint(const APoint: TDoublePoint): boolean; override;
     procedure MoveFigure(dx, dy: double); override;
     function GetParams: TToolParamList; override;
+    function Clone: TFigure; override;
   published
     property VertexCount: TIntegerParam read FVertexCount write FVertexCount;
     property StartPointX: double read FStartPoint.x write FStartPoint.x;
@@ -177,6 +182,8 @@ procedure DeleteSelected;
 procedure MoveSelectedOnTop;
 procedure MoveSelectedOnBottom;
 function GetSelectionParams: TToolParamList;
+function CloneCanvasItems: TFigureList;
+function CloneFigures(Src: TFigureList): TFigureList;
 
 const
   PADDING = 5;
@@ -391,12 +398,15 @@ begin
   for f in CanvasItems do
   begin
     if f.Selected then
+    begin
+      Modified := true;
       for v := Low(f.Vertexes) to High(f.Vertexes) do
       begin
         dx := (f.Vertexes[v].x - Anchor.x) * sx;
         dy := (f.Vertexes[v].y - Anchor.y) * sy;
         f.MoveVertex(v, DoublePoint(Anchor.x + dx, Anchor.y + dy));
       end;
+    end;
   end;
 end;
 
@@ -435,6 +445,7 @@ begin
   for i := Low(CanvasItems) to High(CanvasItems) do
     if (CanvasItems[i] <> nil) and (CanvasItems[i].Selected) then
     begin
+      Modified := true;
       FreeAndNil(CanvasItems[i]);
       Inc(j);
     end;
@@ -459,6 +470,7 @@ begin
   begin
     if CanvasItems[i].Selected and (i + 1 < Length(CanvasItems)) then
     begin
+      Modified := true;
       t := CanvasItems[i + 1];
       CanvasItems[i + 1] := CanvasItems[i];
       CanvasItems[i] := t;
@@ -475,6 +487,7 @@ begin
   begin
     if CanvasItems[i].Selected and (i - 1 >= 0) then
     begin
+      Modified := true;
       t := CanvasItems[i - 1];
       CanvasItems[i - 1] := CanvasItems[i];
       CanvasItems[i] := t;
@@ -537,6 +550,27 @@ begin
   end;
 end;
 
+function CloneCanvasItems: TFigureList;
+begin
+  Result := CloneFigures(CanvasItems);
+end;
+
+function CloneFigures(Src: TFigureList): TFigureList;
+var
+  i: integer;
+begin
+  if Src = nil then
+    exit(nil);
+  for i := Low(Src) to High(Src) do
+  begin
+    if Src[i] <> nil then
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[High(Result)] := Src[i].Clone;
+    end;
+  end;
+end;
+
 { TFillableFigure }
 
 procedure TFillableFigure.SetCanvasStyles(ACanvas: TCanvas);
@@ -554,8 +588,8 @@ constructor TFillableFigure.Create(X, Y: double; ALineWidth: TIntegerParam;
   AFillColor: TColorParam; AFillStyle: TFillStyleParam);
 begin
   inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle);
-  AFillColor.Assign(FFillColor);
-  AFillStyle.Assign(FFillStyle);
+  FFillColor := AFillColor.Clone;
+  FFillStyle := AFillStyle.Clone;
 end;
 
 destructor TFillableFigure.Destroy;
@@ -569,6 +603,16 @@ function TFillableFigure.GetParams: TToolParamList;
 begin
   Result := TToolParamList.Create(LineWidth, LineColor, LineStyle,
     FillColor, FillStyle);
+end;
+
+function TFillableFigure.Clone: TFigure;
+begin
+  Result := inherited Clone;
+  with Result as TFillableFigure do
+  begin
+    FillColor := Self.FillColor.Clone;
+    FillStyle := Self.FillStyle.Clone;
+  end;
 end;
 
 { TDrawableFigure }
@@ -594,9 +638,9 @@ begin
   SetLength(FVertexes, 2);
   FVertexes[0] := DoublePoint(X, Y);
   FVertexes[1] := FVertexes[0];
-  ALineColor.Assign(FLineColor);
-  ALineWidth.Assign(FLineWidth);
-  ALineStyle.Assign(FLineStyle);
+  FLineColor := ALineColor.Clone;
+  FLineWidth := ALineWidth.Clone;
+  FLineStyle := ALineStyle.Clone;
   Selected := False;
 end;
 
@@ -677,6 +721,17 @@ begin
   Result := TToolParamList.Create(LineWidth, LineColor, LineStyle);
 end;
 
+function TDrawableFigure.Clone: TFigure;
+begin
+  Result := inherited Clone;
+  with Result as TDrawableFigure do
+  begin
+    LineWidth := Self.LineWidth.Clone;
+    LineColor := Self.LineColor.Clone;
+    LineStyle := Self.LineStyle.Clone;
+  end;
+end;
+
 { TPolygon }
 
 constructor TPolygon.Create(X, Y: double; ALineWidth: TIntegerParam;
@@ -688,7 +743,7 @@ var
 begin
   inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle,
     AFillColor, AFillStyle);
-  AVertexCount.Assign(FVertexCount);
+  FVertexCount := AVertexCount.Clone;
   SetLength(FVertexes, VertexCount.Value);
   FStartPoint := DoublePoint(X, Y);
   ScreenPoint := WorldToCanvas(X, Y);
@@ -772,6 +827,19 @@ begin
     FillColor, FillStyle);
 end;
 
+function TPolygon.Clone: TFigure;
+begin
+  Result := inherited Clone;
+  with Result as TPolygon do
+  begin
+    VertexCount := Self.VertexCount.Clone;
+    StartPointX := Self.StartPointX;
+    StartPointY := Self.StartPointY;
+    EndPointX := Self.EndPointX;
+    EndPointY := Self.EndPointY;
+  end;
+end;
+
 { TRoundRect }
 
 constructor TRoundRect.Create(X, Y: double; ALineWidth: TIntegerParam;
@@ -781,8 +849,8 @@ constructor TRoundRect.Create(X, Y: double; ALineWidth: TIntegerParam;
 begin
   inherited Create(X, Y, ALineWidth, ALineColor, ALineStyle,
     AFillColor, AFillStyle);
-  ARoundX.Assign(FRoundX);
-  ARoundY.Assign(FRoundY);
+  FRoundX := ARoundX.Clone;
+  FRoundY := ARoundY.Clone;
 end;
 
 destructor TRoundRect.Destroy;
@@ -841,6 +909,16 @@ function TRoundRect.GetParams: TToolParamList;
 begin
   Result := TToolParamList.Create(RoundX, RoundY, LineWidth, LineColor,
     LineStyle, FillColor, FillStyle);
+end;
+
+function TRoundRect.Clone: TFigure;
+begin
+  Result := inherited Clone;
+  with Result as TRoundRect do
+  begin
+    RoundX := Self.RoundX.Clone;
+    RoundY := Self.RoundY.Clone;
+  end;
 end;
 
 { TFigure }
@@ -918,6 +996,19 @@ end;
 procedure TFigure.MoveVertex(VertexIndex: integer; ANewPos: TDoublePoint);
 begin
   FVertexes[VertexIndex] := ANewPos;
+end;
+
+function TFigure.Clone: TFigure;
+var
+  i: TDoublePoint;
+begin
+  Result := Self.ClassType.Create as TFigure;
+  for i in FVertexes do
+  begin
+    SetLength(Result.FVertexes, Length(Result.FVertexes) + 1);
+    Result.FVertexes[High(Result.FVertexes)].x := i.x;
+    Result.FVertexes[High(Result.FVertexes)].y := i.y;
+  end;
 end;
 
 { TRegionSelection }

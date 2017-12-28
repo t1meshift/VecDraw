@@ -127,6 +127,7 @@ begin
   except
     on E: Exception do
     begin
+      CurrentFile := NEW_FILE_NAME;
       Result := 1;
     end;
   end;
@@ -169,7 +170,6 @@ begin
           FigureVertexesJSON.Arrays[j].Floats[0],
           FigureVertexesJSON.Arrays[j].Floats[1]);
       end;
-      FreeAndNil(FigureVertexesJSON);
       CurrFigure.Vertexes := FigureVertexes;
       SetLength(FigureVertexes, 0);
       for k in CurrFigureJSON do
@@ -216,16 +216,18 @@ begin
       CanvasItems[High(CanvasItems)] := CurrFigure;
     end;
     FreeAndNil(f);
+    FreeAndNil(Root);
     CurrentFile := FileName;
   except
     on E: Exception do
     begin
+      CurrentFile := NEW_FILE_NAME;
       Result := 1;
     end;
   end;
 end;
 
 initialization
-CurrentFile := NEW_FILE_NAME;
+  CurrentFile := NEW_FILE_NAME;
 end.
 

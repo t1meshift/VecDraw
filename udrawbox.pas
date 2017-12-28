@@ -7,7 +7,8 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
   ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UTools, UFigures, Types,
-  UTransform, UToolParams, UFileWorker, LazFileUtils;
+  UTransform, UToolParams, UFileWorker, LazFileUtils, FPimage, UHistory,
+  UAppState;
 
 type
 
@@ -17,10 +18,16 @@ type
     CanvasPropsPanel: TPanel;
     DeleteSelectedMenuItem: TMenuItem;
     LoadMenuItem: TMenuItem;
+    ExportToBitmapMenuItem: TMenuItem;
+    ExportBitmapDialog: TSaveDialog;
+    UndoRedoSeparator: TMenuItem;
+    RedoMenuItem: TMenuItem;
+    UndoMenuItem: TMenuItem;
+    SaveMenuItem: TMenuItem;
     NewMenuItem: TMenuItem;
     OpenImgDialog: TOpenDialog;
     SaveImgDialog: TSaveDialog;
-    SaveMenuItem: TMenuItem;
+    SaveAsMenuItem: TMenuItem;
     MoveUpMenuItem: TMenuItem;
     MoveDownMenuItem: TMenuItem;
     SelectAllMenuItem: TMenuItem;
@@ -45,22 +52,26 @@ type
     MainPaintBox: TPaintBox;
     procedure ClearAllMenuItemClick(Sender: TObject);
     procedure DeleteSelectedMenuItemClick(Sender: TObject);
+    procedure ExportToBitmapMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure LoadMenuItemClick(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
     procedure NewMenuItemClick(Sender: TObject);
-    procedure SaveMenuItemClick(Sender: TObject);
+    procedure RedoMenuItemClick(Sender: TObject);
+    procedure SaveAsMenuItemClick(Sender: TObject);
     procedure MoveDownMenuItemClick(Sender: TObject);
     procedure MoveUpMenuItemClick(Sender: TObject);
     procedure RemoveSelectionMenuItemClick(Sender: TObject);
+    procedure SaveMenuItemClick(Sender: TObject);
     procedure SelectAllMenuItemClick(Sender: TObject);
     procedure ShowAllMenuItemClick(Sender: TObject);
     procedure SetScrollBars;
     procedure MainPaintBoxResize(Sender: TObject);
     procedure ScaleFloatSpinChange(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
+    procedure UndoMenuItemClick(Sender: TObject);
     procedure UpdateParamsPanel;
     procedure MainPaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -158,7 +169,7 @@ var
 begin
   ParseCmdArgs;
   DrawForm.DoubleBuffered := True;
-  DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+  SetWindowTitle(DrawForm, CurrentFile);
   SaveImgDialog.FileName := CurrentFile;
   IsDrawing := False;
   IconsPerRow := ToolsPanel.Width div (TOOL_BUTTON_SIZE +
@@ -200,6 +211,8 @@ begin
   WorldBottomRight := DoublePoint(0, 0);
 
   SetScrollBars;
+
+  History.PushState;
 end;
 
 procedure TDrawForm.LoadMenuItemClick(Sender: TObject);
@@ -207,6 +220,7 @@ begin
   if OpenImgDialog.Execute then
   begin
     ClearAllMenuItemClick(nil);
+    Modified := false;
     if LoadFile(OpenImgDialog.FileName)<>0 then
     begin
       Application.MessageBox('Loading error. Make sure the file is valid.',
@@ -214,7 +228,8 @@ begin
       SetLength(CanvasItems, 0);
     end
     else
-      DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+      SetWindowTitle(DrawForm, CurrentFile);
+    History.Clear;
   end;
 end;
 
@@ -233,10 +248,23 @@ procedure TDrawForm.NewMenuItemClick(Sender: TObject);
 begin
   ClearAllMenuItemClick(nil);
   CurrentFile := NEW_FILE_NAME;
-  DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+  Modified := false;
+  SetWindowTitle(DrawForm, CurrentFile);
 end;
 
-procedure TDrawForm.SaveMenuItemClick(Sender: TObject);
+procedure TDrawForm.RedoMenuItemClick(Sender: TObject);
+begin
+  if History.CanRedo then
+  begin
+    History.Redo;
+    SetWindowTitle(DrawForm, CurrentFile);
+  end
+  else
+    RedoMenuItem.Enabled := false;
+  Invalidate;
+end;
+
+procedure TDrawForm.SaveAsMenuItemClick(Sender: TObject);
 begin
   if SaveImgDialog.Execute then
   begin
@@ -246,19 +274,28 @@ begin
         'Error');
     end
     else
-      DrawForm.Caption := CurrentFile + ' - ' + ApplicationName;
+    begin
+      Modified := false;
+      History.RefreshSaveStates;
+      SetWindowTitle(DrawForm, CurrentFile);
+      Application.MessageBox('Successfully saved!', 'Info');
+    end;
   end;
 end;
 
 procedure TDrawForm.MoveDownMenuItemClick(Sender: TObject);
 begin
   MoveSelectedOnBottom;
+  SetWindowTitle(DrawForm, CurrentFile);
+  History.PushState;
   Invalidate;
 end;
 
 procedure TDrawForm.MoveUpMenuItemClick(Sender: TObject);
 begin
   MoveSelectedOnTop;
+  SetWindowTitle(DrawForm, CurrentFile);
+  History.PushState;
   Invalidate;
 end;
 
@@ -267,6 +304,25 @@ begin
   RemoveSelection;
   UpdateParamsPanel;
   Invalidate;
+end;
+
+procedure TDrawForm.SaveMenuItemClick(Sender: TObject);
+begin
+  if CurrentFile = NEW_FILE_NAME then
+  begin
+    SaveAsMenuItemClick(Sender);
+    exit;
+  end;
+  if SaveFile(CurrentFile) <> 0 then
+    Application.MessageBox('Saving error. Make sure the file isn''t locked.',
+      'Error')
+  else
+  begin
+    Modified := false;
+    History.RefreshSaveStates;
+    SetWindowTitle(DrawForm, CurrentFile);
+    Application.MessageBox('Successfully saved!', 'Info');
+  end;
 end;
 
 procedure TDrawForm.SelectAllMenuItemClick(Sender: TObject);
@@ -351,6 +407,18 @@ begin
   UpdateParamsPanel;
 end;
 
+procedure TDrawForm.UndoMenuItemClick(Sender: TObject);
+begin
+  if History.CanUndo then
+  begin
+    History.Undo;
+    SetWindowTitle(DrawForm, CurrentFile);
+  end
+  else
+    UndoMenuItem.Enabled := false;
+  Invalidate;
+end;
+
 procedure TDrawForm.UpdateParamsPanel;
 var
   CurrParam: TToolParam;
@@ -414,8 +482,10 @@ begin
   end;
   if IsDrawing then
   begin
+    History.PushState;
     IsDrawing := False;
   end;
+  SetWindowTitle(DrawForm, CurrentFile);
   UpdateParamsPanel;
   MainPaintBox.Invalidate;
 end;
@@ -426,6 +496,12 @@ var
   WorldZeroTL, WorldZeroBR: TPoint;
 begin
   ScaleFloatSpin.Value := Scale * 100;
+  SetWindowTitle(DrawForm, CurrentFile);
+  if History <> nil then
+  begin
+    UndoMenuItem.Enabled := History.CanUndo;
+    RedoMenuItem.Enabled := History.CanRedo;
+  end;
   with MainPaintBox.Canvas do
   begin
     Brush.Color := clWhite;
@@ -454,9 +530,13 @@ var
 begin
   SetScale(1); //100%
   CanvasOffset := DoublePoint(0,0);
+  if Length(CanvasItems) > 0 then
+    Modified := true;
   for i := Low(CanvasItems) to High(CanvasItems) do
     FreeAndNil(CanvasItems[i]);
   SetLength(CanvasItems, 0);
+  SetWindowTitle(DrawForm, CurrentFile);
+  History.PushState;
   UpdateParamsPanel;
   MainPaintBox.Invalidate;
   SetScrollBars;
@@ -465,9 +545,54 @@ end;
 procedure TDrawForm.DeleteSelectedMenuItemClick(Sender: TObject);
 begin
   DeleteSelected;
+  History.PushState;
   SetScrollBars;
   UpdateParamsPanel;
   Invalidate;
+end;
+
+procedure TDrawForm.ExportToBitmapMenuItemClick(Sender: TObject);
+var
+  bmp: TBitmap;
+  png: TPortableNetworkGraphic;
+  i: TFigure;
+begin
+  if ExportBitmapDialog.Execute then
+  begin
+    try
+      bmp := TBitmap.Create;
+      bmp.Width := CanvasWidth;
+      bmp.Height := CanvasHeight;
+      bmp.Canvas.FloodFill(0, 0, clWhite, fsBorder);
+      for i in CanvasItems do
+        i.Draw(bmp.Canvas);
+      case LowerCase(ExtractFileExt(ExportBitmapDialog.FileName)) of
+        '.bmp':
+        begin
+          bmp.SaveToFile(ExportBitmapDialog.FileName);
+        end;
+        '.png':
+        begin
+          png := TPortableNetworkGraphic.Create;
+          png.LoadFromIntfImage(bmp.CreateIntfImage);
+          png.SaveToFile(ExportBitmapDialog.FileName);
+          FreeAndNil(png);
+        end
+        else
+        begin
+          Application.MessageBox(PChar('Not yet implemented! ' +
+            ExtractFileExt(ExportBitmapDialog.FileName)), 'Info');
+        end;
+      end;
+      FreeAndNil(bmp);
+      Application.MessageBox('Successfully exported!', 'Info');
+    except
+      on E: Exception do
+      begin
+        Application.MessageBox('Exporting error!', 'Error');
+      end;
+    end;
+  end;
 end;
 
 procedure TDrawForm.AboutMenuItemClick(Sender: TObject);
@@ -499,6 +624,7 @@ begin
     if ToolsBase[i] <> nil then
       FreeAndNil(ToolsBase[i]);
   SetLength(ToolsBase, 0);
+  FreeAndNil(History);
 end;
 
 end.
