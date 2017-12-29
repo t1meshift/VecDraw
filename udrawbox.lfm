@@ -8,6 +8,7 @@ object DrawForm: TDrawForm
   ClientWidth = 1055
   Menu = MainMenu
   OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   Position = poScreenCenter
   LCLVersion = '1.6.4.0'

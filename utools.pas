@@ -298,8 +298,7 @@ begin
       for f in SelectedFigures do
       begin
         f.MoveFigure(dx, dy);
-        if (dx > 0.01) and (dy > 0.01) then
-          FigureModified := true;
+        FigureModified := true;
         DragFigurePrevPoint := WorldCurrPoint;
       end;
     end;

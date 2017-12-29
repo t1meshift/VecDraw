@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, LCLType, Clipbrd, UFileWorker, fpjson, UFigures, Graphics;
 
 const
-  { Our own mime type but actually it's JSON string }
+  { JSON string }
   CLIPBRD_FORMAT_NAME = 'VecDraw';
 
 procedure CopySelected;
@@ -36,6 +36,7 @@ begin
     Clipboard.AddFormat(cfVecDraw, s);
     FreeAndNil(json);
     FreeAndNil(s);
+    FreeAndNil(pic);
   end;
   Clipboard.Close;
 end;
@@ -60,9 +61,9 @@ begin
     for Figure in Figures do
       if Figure <> nil then
       begin
-        Figure.Selected := true;
         SetLength(CanvasItems, Length(CanvasItems) + 1);
         CanvasItems[High(CanvasItems)] := Figure.Clone;
+        CanvasItems[High(CanvasItems)].Selected := true;
       end;
     FreeAndNil(json);
     for i := Low(Figures) to High(Figures) do

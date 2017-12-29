@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus, Math,
   ExtCtrls, Spin, ActnList, Buttons, StdCtrls, UAbout, UTools, UFigures, Types,
   UTransform, UToolParams, UFileWorker, LazFileUtils, FPimage, UHistory,
-  UAppState, UClipboard;
+  UAppState, UClipboard, LCLType;
 
 type
 
@@ -72,6 +72,7 @@ type
     procedure EditMenuItemClick(Sender: TObject);
     procedure ExportToBitmapMenuItemClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
     procedure LoadMenuItemClick(Sender: TObject);
     procedure MainPaintBoxMouseWheel(Sender: TObject; Shift: TShiftState;
@@ -103,6 +104,7 @@ type
     procedure ExitMenuItemClick(Sender: TObject);
     procedure ScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
       var ScrollPos: integer);
+    function CanDiscardChanges: boolean;
 
   private
     { private declarations }
@@ -236,7 +238,7 @@ end;
 
 procedure TDrawForm.LoadMenuItemClick(Sender: TObject);
 begin
-  if OpenImgDialog.Execute then
+  if CanDiscardChanges and OpenImgDialog.Execute then
   begin
     ClearAllMenuItemClick(nil);
     Modified := false;
@@ -612,7 +614,6 @@ procedure TDrawForm.EditMenuItemClick(Sender: TObject);
 begin
   CutMenuItem.Enabled := HasSelection;
   CopyMenuItem.Enabled := HasSelection;
-  PasteMenuItem.Enabled := HasSelection;
   DeleteSelectedMenuItem.Enabled := HasSelection;
   MoveUpMenuItem.Enabled := HasSelection;
   MoveDownMenuItem.Enabled := HasSelection;
@@ -676,18 +677,31 @@ begin
   MainPaintBox.Invalidate;
 end;
 
+function TDrawForm.CanDiscardChanges: boolean;
+begin
+  Result := (not Modified) or
+    (Modified and (Application.MessageBox('Отклонить изменения?',
+    'Подтверждение', MB_YESNO + MB_ICONASTERISK + MB_DEFBUTTON2) = IDYES));
+end;
+
 procedure TDrawForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 var
   i: integer;
 begin
   ClearAllMenuItemClick(nil);
   ToolParamsPanel.DestroyComponents;
+  FreeAndNil(MainPaintBox);
   CurrentTool := nil;
   for i := Low(ToolsBase) to High(ToolsBase) do
     if ToolsBase[i] <> nil then
       FreeAndNil(ToolsBase[i]);
   SetLength(ToolsBase, 0);
   FreeAndNil(History);
+end;
+
+procedure TDrawForm.FormCloseQuery(Sender: TObject; var CanClose: boolean);
+begin
+  CanClose := CanDiscardChanges;
 end;
 
 end.

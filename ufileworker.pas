@@ -205,6 +205,7 @@ var
   TL, BR: TDoublePoint;
   CanvasTL, CanvasBR: TPoint;
   FirstFigure: boolean;
+  FigureLineWidth: double;
 begin
   Result := TBitmap.Create;
   FirstFigure := true;
@@ -214,28 +215,37 @@ begin
     begin
       if FirstFigure then
       begin
-        TL := i.TopLeftBorder;
-        BR := i.BottomRightBorder;
+        FigureLineWidth := (i as TDrawableFigure).LineWidth.Value / 2;
+        TL.x := i.TopLeftBorder.x - FigureLineWidth;
+        TL.y := i.TopLeftBorder.y - FigureLineWidth;
+        BR.x := i.BottomRightBorder.x + FigureLineWidth;
+        BR.y := i.BottomRightBorder.y + FigureLineWidth;
         FirstFigure := false;
       end
       else
       begin
-        TL.x := min(TL.x, i.TopLeftBorder.x);
-        TL.y := min(TL.y, i.TopLeftBorder.y);
-        BR.x := max(BR.x, i.BottomRightBorder.x);
-        BR.y := max(BR.y, i.BottomRightBorder.y);
+        FigureLineWidth := (i as TDrawableFigure).LineWidth.Value / 2;
+        TL.x := min(TL.x, i.TopLeftBorder.x - FigureLineWidth);
+        TL.y := min(TL.y, i.TopLeftBorder.y - FigureLineWidth);
+        BR.x := max(BR.x, i.BottomRightBorder.x + FigureLineWidth);
+        BR.y := max(BR.y, i.BottomRightBorder.y + FigureLineWidth);
       end;
     end;
 
   SetScale(1);
-  CanvasOffset := TL;
+  if SelectedOnly then
+    CanvasOffset := GetSelectionTopLeft
+  else
+    CanvasOffset := TL;
+  CanvasOffset.x := CanvasOffset.x - PADDING;
+  CanvasOffset.y := CanvasOffset.y - PADDING;
   CanvasTL := WorldToCanvas(TL);
   CanvasBR := WorldToCanvas(BR);
 
   with Result do
   begin
-    Width := CanvasBR.x - CanvasTL.x + PADDING;
-    Height := CanvasBR.y - CanvasTL.y + PADDING;
+    Width := CanvasBR.x - CanvasTL.x + 2*PADDING;
+    Height := CanvasBR.y - CanvasTL.y + 2*PADDING;
     Canvas.Brush.Style := bsSolid;
     Canvas.Brush.Color := clWhite;
     Canvas.Pen.Style := psClear;
