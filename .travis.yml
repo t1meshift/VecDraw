@@ -1,0 +1,45 @@
+language: generic
+sudo: required
+dist: trusty
+
+os:
+  - linux
+  - osx
+
+env:
+  global:
+    - WINEPREFIX=~/.winelaz
+    - DISPLAY=:99.0
+  matrix:
+    - LAZ_PKG=true  # Use the latest version from the default package manager
+
+matrix:
+  include:
+    - os: linux
+      env: LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
+
+before_install:
+  # Start virtual display server
+  - Xvfb $DISPLAY &
+
+install:
+  # Install prerequisites (fpc/lazarus/wine/qemu)
+  - ./travis-lazarus/.travis.install.py
+
+script:
+  - lazbuild $LAZ_OPT VecDraw.lpi  # Build project
+#  - zip VecDraw_build.zip -r -5 ./icons/* VecDraw.exe VecDraw
+
+
+# deploy:
+#   provider: releases
+#   api_key: "GITHUB OAUTH TOKEN"
+#   file: "VecDraw_build.zip"
+#   skip_cleanup: true
+#   on:
+#     tags: true
+
+notifications:
+  email:
+    on_success: false
+    on_failure: change
