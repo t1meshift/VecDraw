@@ -1,0 +1,34 @@
+language: generic
+sudo: required
+dist: trusty
+
+os:
+  - linux
+  - osx
+
+env:
+  global:
+    - WINEPREFIX=~/.winelaz
+    - DISPLAY=:99.0
+  matrix:
+    - LAZ_PKG=true  # Use the latest version from the default package manager
+
+matrix:
+  include:
+    - os: linux
+      env: LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
+
+before_install:
+  # Start virtual display server
+  - Xvfb $DISPLAY &
+
+install:
+  # Install prerequisites (fpc/lazarus/wine/qemu)
+  - ./travis-lazarus/.travis.install.py
+script:
+  - lazbuild $LAZ_OPT VecDraw.lpi  # Build project
+
+notifications:
+  email:
+    on_success: false
+    on_failure: change
