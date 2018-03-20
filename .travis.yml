@@ -36,7 +36,6 @@ script:
     fi"
   - zip VecDraw_build.zip -r -5 ./icons/* ./VecDraw_build*
 
-
 # deploy:
 #   provider: releases
 #   api_key: "GITHUB OAUTH TOKEN"
