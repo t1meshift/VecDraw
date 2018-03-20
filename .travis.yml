@@ -15,9 +15,9 @@ env:
 matrix:
   include:
     - os: linux
-      env: LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
+      env: LAZ_VER=1.6.4 LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
     - os: linux
-      env: LAZ_ENV=linux
+      env: LAZ_VER=1.6.4 LAZ_ENV=linux
 
 before_install:
   # Start virtual display server
@@ -28,7 +28,7 @@ install:
   - ./travis-lazarus/.travis.install.py
 
 script:
-  - echo $LAZ_BIN_SRC && lazbuild $LAZ_OPT VecDraw.lpi  # Build project
+  - lazbuild $LAZ_OPT VecDraw.lpi  # Build project
 #  - zip VecDraw_build.zip -r -5 ./icons/* VecDraw.exe VecDraw
 
 
