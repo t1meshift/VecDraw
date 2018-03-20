@@ -32,6 +32,7 @@ before_deploy:
   - git config --global user.email "$GITHUB_EMAIL"
   - git config --global user.name "t1meshift"
   - export GIT_TAG=$TRAVIS_BRANCH-b$TRAVIS_BUILD_NUMBER
+  - export TRAVIS_TAG=$GIT_TAG
   - if [[ "$LAZ_ENV" == "linux" ]]; then rm ./VecDraw; fi
   - if [[ "$LAZ_ENV" == "wine" ]]; then rm ./VecDraw.exe; fi
   - git tag $GIT_TAG -a -m "Travis-CI build $TRAVIS_BUILD_NUMBER"
