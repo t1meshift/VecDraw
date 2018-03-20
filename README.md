@@ -22,6 +22,7 @@ Or just use Telegram: my nickname is \@autist.
 8. Undo/redo (done)
 9. Clipboard (done)
 10. Export to raster formats (done)
+- Travis-CI building coming soon
 - others coming soon 
 
 ## TODO list:
