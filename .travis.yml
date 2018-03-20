@@ -13,9 +13,9 @@ env:
 matrix:
   include:
   - os: linux
-    env: LAZ_VER=1.8.2 LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
+    env: LAZ_VER=1.8.2 LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386 --bm=Release"
   - os: linux
-    env: LAZ_VER=1.8.2 LAZ_ENV=linux LAZ_OPT="--os=linux --cpu=x86_64"
+    env: LAZ_VER=1.8.2 LAZ_ENV=linux LAZ_OPT="--os=linux --cpu=x86_64 --bm=Release"
 before_install:
 - Xvfb $DISPLAY &
 install:
