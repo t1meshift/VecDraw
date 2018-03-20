@@ -1,50 +1,36 @@
 language: generic
 sudo: required
 dist: trusty
-
 os:
-  - linux
-
+- linux
 env:
   global:
-    - WINEPREFIX=~/.winelaz
-    - DISPLAY=:99.0
+  - WINEPREFIX=~/.winelaz
+  - DISPLAY=:99.0
   matrix:
-    - LAZ_VER=1.8.2 # because Trusty version is 1.0.x which is EXTREMELY outdated
-
+  - LAZ_VER=1.8.2
 matrix:
   include:
-    - os: linux
-      env: LAZ_VER=1.8.2 LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
-    - os: linux
-      env: LAZ_VER=1.8.2 LAZ_ENV=linux LAZ_OPT="--os=linux --cpu=x86_64"
-
+  - os: linux
+    env: LAZ_VER=1.8.2 LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
+  - os: linux
+    env: LAZ_VER=1.8.2 LAZ_ENV=linux LAZ_OPT="--os=linux --cpu=x86_64"
 before_install:
-  # Start virtual display server
-  - Xvfb $DISPLAY &
-
+- Xvfb $DISPLAY &
 install:
-  # Install prerequisites (fpc/lazarus/wine/qemu)
-  - ./travis-lazarus/.travis.install.py
-
+- "./travis-lazarus/.travis.install.py"
 script:
-  - lazbuild $LAZ_OPT VecDraw.lpi  # Build project
-  - if [[ $LAZ_ENV = "linux" && -d "./VecDraw" ]]; then 
-    mv ./VecDraw ./VecDraw_build; 
-    elif [[ $LAZ_ENV = "wine" && -d "./VecDraw.exe" ]]; then
-    mv ./VecDraw.exe ./VecDraw_build.exe; 
-    fi
-  - zip VecDraw_build.zip -r -5 ./icons/* ./VecDraw_build*
-
-# deploy:
-#   provider: releases
-#   api_key: "GITHUB OAUTH TOKEN"
-#   file: "VecDraw_build.zip"
-#   skip_cleanup: true
-#   on:
-#     tags: true
-
+- lazbuild $LAZ_OPT VecDraw.lpi
+- zip VecDraw_build_$LAZ_ENV.zip -r -5 ./icons/* ./VecDraw ./VecDraw.exe
 notifications:
   email:
     on_success: false
     on_failure: change
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: NuF0oSeYU/Gl4vSYBc4TBJBI3lMrBR70wqOSiK8PtwNBupyH80EMxtfMa7V4iKhi8tbEK3ELRWMIMPuAPjBFxj/iTWAIW1DtRKlZuMofjH9q2dRGvHdPoX0awkr/u0H6pEBDFBI7B7WyukX/tlcas3xyp/svxo+AOmIRuZM7P8sqHNf3bb2otWK9ncs+E9hwzJBxWyhub4BZ2m4aA2T4RO8s1py9M5RgNpPXLK00S5LutJ+D1VY78VqISl1Gx8TIxvWHkH6/7Of4yxSDDusgda0StXrP239QI3XcwfddOOhVbhTLg0fiGvJwYqQqf/5igyh2k1atCrh53xQLhZ1nbxirASiAjYD2uMAyg0mSbpzbEhMdpgIlTJESrO3rEdbK897LYUTHZcnmvUZyRVgZfYA3ttBZJAD/W9v02diHq+aG55PEw/v7ddFKlRojyNumQxWqYPSh+jBUYJr3fK06nxhFw3C3cZ3akukfcIe3L5qYEkAwlFlH768CBli3gk2rsDyaaPJy1N6dgRMPxZPlaj7CM7c+/IAU0PTpZsy7W5UDfIeROGjdzxBcoQHRIN7GXO01jTQNG1M7woSHr8JlMtx42TwZwQBvLP5Qc2xfFpl6d17ESjP8CbJxgHOoqdy2w2YDOfbAHP6Sz78v3TJbVE+zuCjkYDoFKeaQAgHSy9U=
+  file: VecDraw_build_$LAZ_ENV.zip
+  on:
+    repo: t1meshift/VecDraw
