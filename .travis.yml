@@ -29,11 +29,11 @@ install:
 
 script:
   - lazbuild $LAZ_OPT VecDraw.lpi  # Build project
-  - "if [[ $LAZ_ENV = "linux" && -d "./VecDraw" ]]; then 
+  - if [[ $LAZ_ENV = "linux" && -d "./VecDraw" ]]; then 
     mv ./VecDraw ./VecDraw_build; 
     elif [[ $LAZ_ENV = "wine" && -d "./VecDraw.exe" ]]; then
     mv ./VecDraw.exe ./VecDraw_build.exe; 
-    fi"
+    fi
   - zip VecDraw_build.zip -r -5 ./icons/* ./VecDraw_build*
 
 # deploy:
