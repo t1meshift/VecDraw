@@ -16,6 +16,8 @@ matrix:
   include:
     - os: linux
       env: LAZ_ENV=wine WINEARCH=win32 LAZ_OPT="--os=win32 --cpu=i386"
+    - os: linux
+      env: LAZ_ENV=linux
 
 before_install:
   # Start virtual display server
