@@ -26,7 +26,6 @@ install:
   - ./travis-lazarus/.travis.install.py
 
 script:
-  - fpc -v
   - lazbuild $LAZ_OPT VecDraw.lpi  # Build project
 #  - zip VecDraw_build.zip -r -5 ./icons/* VecDraw.exe VecDraw
 

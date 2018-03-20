@@ -1,4 +1,4 @@
-# VecDraw
+# VecDraw [![Build Status](https://travis-ci.org/t1meshift/VecDraw.svg?branch=master)](https://travis-ci.org/t1meshift/VecDraw)
 Vector graphic editor licensed with Unlicense. It is being written as training project on window application programming course. It's not perfect as I wanted but it works.
 
 ## Wanna write off my code?
