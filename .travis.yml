@@ -7,6 +7,7 @@ env:
   global:
   - WINEPREFIX=~/.winelaz
   - DISPLAY=:99.0
+  secure: p6/u7kM/H7/zc4devGO8rN6wN9tO2ScEWV6ccTnPyX7cSCtUsHRhisE6oDh8o2Cvzfjr7R2XB36fLwZmuj7szbNB9zB3eW1s+Z8XdMWXMnQ6vBtaIfwE0h+XORqeDkU5aUkfy0xyiZDwxL5evFht/wnGW+hI1T6cLrxq67LK28qoKjJhaQcPInIFYjstm/f4DKrQAsO9lTV0eB/ld3zhPJk147W1aG8XqzOKN+aEftNNddWQpGKvvPYxHBNn+0Jsz3a6uaidTmsCCyBKc6qzB3Lu48cMJx3z5jro+t+jyMHiPJT+zMYQosjKVyEiHE3G7n+EWFo3zN7CW7UEBh66xKSRb7RQbqizn8FfKLuGfh6KlDESOL12M1hHraYqZvl9Jc8mZBL8yTOY5Jyy0xjjbTVws6exW+Dhxd9B8qoMWjuQp0qHPK8hxV59CGdp1RYmecMvAT6kv690/q9ua7t9DlqTl+YFLxja9P0cXns9NKQA9iQNtI5Orr1VnWFQew3yUjhjR69UeA/Qsyf1XcsWcHRhMSkRd3QZCrvJ5cqiQ9plcZ4s7RAx0dbN7/RYc7Et3KF4/Z/6CamTPbTGnGQyfpXajA71TJ8iJOSAebp94v87xiQjthNBJ7f8uKeUSfR672TC2IWyqq3g0X3LZfQ4RkMjlYDtuY0/ehNQW8OCxlo=
   matrix:
   - LAZ_VER=1.8.2
 matrix:
@@ -28,13 +29,13 @@ notifications:
     on_failure: change
 
 before_deploy:
-  - git config --global user.email "builds@travis-ci.org"
-  - git config --global user.name "Travis CI"
+  - git config --global user.email "$GITHUB_EMAIL"
+  - git config --global user.name "t1meshift"
   - export GIT_TAG=$TRAVIS_BRANCH-b$TRAVIS_BUILD_NUMBER
   - if [[ "$LAZ_ENV" == "linux" ]]; then rm ./VecDraw; fi
   - if [[ "$LAZ_ENV" == "wine" ]]; then rm ./VecDraw.exe; fi
   - git tag $GIT_TAG -a -m "Travis-CI build $TRAVIS_BUILD_NUMBER"
-  - git push -q https://$TAGPERM@github.com/t1meshift/VecDraw --tags
+  #- git push -q https://$TAGPERM@github.com/t1meshift/VecDraw --tags
 deploy:
   provider: releases
   skip_cleanup: true
@@ -42,4 +43,5 @@ deploy:
     secure: NuF0oSeYU/Gl4vSYBc4TBJBI3lMrBR70wqOSiK8PtwNBupyH80EMxtfMa7V4iKhi8tbEK3ELRWMIMPuAPjBFxj/iTWAIW1DtRKlZuMofjH9q2dRGvHdPoX0awkr/u0H6pEBDFBI7B7WyukX/tlcas3xyp/svxo+AOmIRuZM7P8sqHNf3bb2otWK9ncs+E9hwzJBxWyhub4BZ2m4aA2T4RO8s1py9M5RgNpPXLK00S5LutJ+D1VY78VqISl1Gx8TIxvWHkH6/7Of4yxSDDusgda0StXrP239QI3XcwfddOOhVbhTLg0fiGvJwYqQqf/5igyh2k1atCrh53xQLhZ1nbxirASiAjYD2uMAyg0mSbpzbEhMdpgIlTJESrO3rEdbK897LYUTHZcnmvUZyRVgZfYA3ttBZJAD/W9v02diHq+aG55PEw/v7ddFKlRojyNumQxWqYPSh+jBUYJr3fK06nxhFw3C3cZ3akukfcIe3L5qYEkAwlFlH768CBli3gk2rsDyaaPJy1N6dgRMPxZPlaj7CM7c+/IAU0PTpZsy7W5UDfIeROGjdzxBcoQHRIN7GXO01jTQNG1M7woSHr8JlMtx42TwZwQBvLP5Qc2xfFpl6d17ESjP8CbJxgHOoqdy2w2YDOfbAHP6Sz78v3TJbVE+zuCjkYDoFKeaQAgHSy9U=
   file: VecDraw_build_$LAZ_ENV.zip
   on:
+    tags: true
     repo: t1meshift/VecDraw
