@@ -26,6 +26,15 @@ notifications:
   email:
     on_success: false
     on_failure: change
+
+before_deploy:
+  - git config --global user.email "builds@travis-ci.org"
+  - git config --global user.name "Travis CI"
+  - export GIT_TAG=$TRAVIS_BRANCH-b$TRAVIS_BUILD_NUMBER
+  - rm ./VecDraw
+  - rm ./VecDraw.exe
+  - git tag $GIT_TAG -a -m "Travis-CI build $TRAVIS_BUILD_NUMBER"
+  - git push -q https://$TAGPERM@github.com/t1meshift/VecDraw --tags
 deploy:
   provider: releases
   skip_cleanup: true
