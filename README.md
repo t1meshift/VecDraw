@@ -1,5 +1,7 @@
 # VecDraw [![Build Status](https://travis-ci.org/t1meshift/VecDraw.svg?branch=master)](https://travis-ci.org/t1meshift/VecDraw)
 Vector graphic editor licensed with Unlicense. It is being written as training project on window application programming course. It's not perfect as I wanted but it works.
+## Requires FPC 3.0.2+ to compile a project! 
+If you don't want to download Lazarus to see how it works, you can check out the binaries for Windows and Linux on [Releases page](https://github.com/t1meshift/VecDraw/releases).
 
 ## Wanna write off my code?
 No problem. I wish you could understand it...
@@ -22,8 +24,15 @@ Or just use Telegram: my nickname is \@autist.
 8. Undo/redo (done)
 9. Clipboard (done)
 10. Export to raster formats (done)
-- Travis-CI building coming soon
 - others coming soon 
 
 ## TODO list:
 - **REFACTORING!** Seriously, this code looks a bit awful.
+
+
+
+
+
+
+## Travis-CI? For educational project written in Object Pascal? You must be kidding me!
+Well, I find it something funny. I've configured CI system because I can! :octocat:
