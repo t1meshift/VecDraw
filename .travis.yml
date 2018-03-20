@@ -22,7 +22,8 @@ install:
 - "./travis-lazarus/.travis.install.py"
 script:
 - lazbuild $LAZ_OPT VecDraw.lpi
-- zip VecDraw_build_$LAZ_ENV.zip -r -5 ./icons/* ./VecDraw ./VecDraw.exe
+- if [[ "$LAZ_ENV" = "wine" ]]; then export BUILD_TARGET=win32; elif [[ "$LAZ_ENV" = "linux" ]]; then export BUILD_TARGET=linux64; fi
+- zip VecDraw_bin_$BUILD_TARGET.zip -r -5 ./LICENSE ./icons/* ./VecDraw ./VecDraw.exe
 notifications:
   email:
     on_success: false
@@ -31,17 +32,16 @@ notifications:
 before_deploy:
   - git config --global user.email "$GITHUB_EMAIL"
   - git config --global user.name "t1meshift"
-  - export GIT_TAG=$TRAVIS_BRANCH-b$TRAVIS_BUILD_NUMBER
+  - export GIT_TAG=build$TRAVIS_BUILD_NUMBER-$TRAVIS_BRANCH
   - export TRAVIS_TAG=$GIT_TAG
   - if [[ "$LAZ_ENV" == "linux" ]]; then rm ./VecDraw; fi
   - if [[ "$LAZ_ENV" == "wine" ]]; then rm ./VecDraw.exe; fi
   - git tag $GIT_TAG -a -m "Travis-CI build $TRAVIS_BUILD_NUMBER"
-  #- git push -q https://$TAGPERM@github.com/t1meshift/VecDraw --tags
 deploy:
   provider: releases
   skip_cleanup: true
   api_key:
     secure: NuF0oSeYU/Gl4vSYBc4TBJBI3lMrBR70wqOSiK8PtwNBupyH80EMxtfMa7V4iKhi8tbEK3ELRWMIMPuAPjBFxj/iTWAIW1DtRKlZuMofjH9q2dRGvHdPoX0awkr/u0H6pEBDFBI7B7WyukX/tlcas3xyp/svxo+AOmIRuZM7P8sqHNf3bb2otWK9ncs+E9hwzJBxWyhub4BZ2m4aA2T4RO8s1py9M5RgNpPXLK00S5LutJ+D1VY78VqISl1Gx8TIxvWHkH6/7Of4yxSDDusgda0StXrP239QI3XcwfddOOhVbhTLg0fiGvJwYqQqf/5igyh2k1atCrh53xQLhZ1nbxirASiAjYD2uMAyg0mSbpzbEhMdpgIlTJESrO3rEdbK897LYUTHZcnmvUZyRVgZfYA3ttBZJAD/W9v02diHq+aG55PEw/v7ddFKlRojyNumQxWqYPSh+jBUYJr3fK06nxhFw3C3cZ3akukfcIe3L5qYEkAwlFlH768CBli3gk2rsDyaaPJy1N6dgRMPxZPlaj7CM7c+/IAU0PTpZsy7W5UDfIeROGjdzxBcoQHRIN7GXO01jTQNG1M7woSHr8JlMtx42TwZwQBvLP5Qc2xfFpl6d17ESjP8CbJxgHOoqdy2w2YDOfbAHP6Sz78v3TJbVE+zuCjkYDoFKeaQAgHSy9U=
-  file: VecDraw_build_$LAZ_ENV.zip
+  file: VecDraw_bin_$BUILD_TARGET.zip
   on:
     repo: t1meshift/VecDraw
